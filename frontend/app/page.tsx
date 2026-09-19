@@ -165,7 +165,7 @@ export default function Home() {
             {/* Tagline pill */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 border border-neutral-800 text-xs font-medium text-neutral-300 mb-6 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
-              Web3 Security Investigation Platform
+              MANGAATHA
             </div>
 
             {/* Heading */}
