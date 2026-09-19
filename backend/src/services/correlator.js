@@ -41,34 +41,78 @@ export function evaluateSingleExposure(approval, allowance, security) {
 
   const isUnlimited = allowance.isUnlimited || approval.allowance?.type === "unlimited";
 
-  // Check 1: Critical / Potential Security Threat
-  if (security.riskLevel === "high") {
+  // Check approval age for stale/legacy permission anomaly (Milestone 13)
+  const approvedAgeDays = approval.approvedAt
+    ? Math.floor((Date.now() - new Date(approval.approvedAt).getTime()) / (1000 * 86400))
+    : null;
+  const isStale = approvedAgeDays !== null && approvedAgeDays > 180;
+  const staleSuffix = isStale ? ` (Legacy approval granted ${approvedAgeDays} days ago)` : "";
+
+  // Check allowance size anomaly (Milestone 13)
+  const cleanNumberStr = String(allowance.display || approval.allowance?.raw || "").replace(/,/g, "");
+  const numericVal = parseFloat(cleanNumberStr);
+  const isHugeNumericAllowance = !isUnlimited && (cleanNumberStr.length > 20 || (!isNaN(numericVal) && numericVal >= 1_000_000_000));
+
+  // Check 1 (CRITICAL): Spender is an EOA (Externally Owned Account) — Phishing / Drainer Hazard
+  // Web3 security rule: Approvals must only be granted to smart contracts.
+  // Approving an EOA gives a private individual direct transferFrom power to siphon tokens at any moment.
+  const isEoa =
+    security.isContract === false ||
+    security.isEoa === true ||
+    approval._spenderMeta?.isContract === false ||
+    security.signals?.some((s) => s.toLowerCase().includes("externally owned account") || s.toLowerCase().includes("not a contract address"));
+
+  if (isEoa) {
     status = "potential";
-    const criticalSignal = security.signals?.find((s) => s.startsWith("Critical") || s.startsWith("Doubt") || s.startsWith("Exploit") || s.startsWith("Phishing"));
+    reason = `Critical Risk: Spender is an Externally Owned Account (EOA personal wallet: ${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}), NOT a smart contract. The private key holder has direct permission to transfer your ${tokenSymbol} tokens at any time without smart contract safeguards.`;
+  }
+  // Check 2: Critical / Potential Security Threat from security providers
+  else if (security.riskLevel === "high") {
+    status = "potential";
+    const criticalSignal = security.signals?.find(
+      (s) =>
+        s.startsWith("Critical") ||
+        s.startsWith("Doubt") ||
+        s.startsWith("Exploit") ||
+        s.startsWith("Phishing") ||
+        s.startsWith("Blacklist")
+    );
     reason = criticalSignal
       ? `High Risk: ${criticalSignal}. Active ${isUnlimited ? "unlimited" : ""} ${tokenSymbol} permission detected.`
       : `High Risk: Spender contract flagged for suspicious activity with active ${tokenSymbol} allowance.`;
   }
-  // Check 2: Attention / Code Unverified
+  // Check 3 (Milestone 13 Anomaly): Spender is Closed-Source / Unverified Contract
   else if (!security.isOpenSource && security.isContract) {
     status = "attention";
-    reason = `Unverified Contract: ${spenderName} is not open-source on explorer. Unaudited code has active ${isUnlimited ? "unlimited" : ""} ${tokenSymbol} allowance.`;
+    reason = `Unverified Contract: ${spenderName} is not open-source on explorer. Unaudited code has active ${isUnlimited ? "unlimited" : allowance.display} ${tokenSymbol} allowance.${staleSuffix}`;
   }
-  // Check 3: Owner Privileges / Backdoors
+  // Check 4 (Milestone 13 Anomaly): Recently Deployed / Upgradeable Proxy / Owner Privilege
   else if (security.riskLevel === "attention") {
     status = "attention";
-    const attentionSignal = security.signals?.[0] || "Special owner privileges detected in spender code";
-    reason = `Caution: ${attentionSignal} on ${spenderName} with active ${tokenSymbol} allowance.`;
+    const anomalySignal =
+      security.signals?.find(
+        (s) =>
+          s.startsWith("Anomaly") ||
+          s.startsWith("Upgradeable") ||
+          s.startsWith("Owner Privilege") ||
+          s.startsWith("Selfdestruct")
+      ) || security.signals?.[0] || "Special privileges or anomaly detected in spender code";
+    reason = `Caution: ${anomalySignal} on ${spenderName} with active ${isUnlimited ? "unlimited" : allowance.display} ${tokenSymbol} allowance.${staleSuffix}`;
   }
-  // Check 4: Clean Verified Protocol with Unlimited Allowance
+  // Check 5 (Milestone 13 Anomaly): Abnormally massive token allowance to non-whitelisted protocol
+  else if (isHugeNumericAllowance && !security.isTrustListed) {
+    status = "attention";
+    reason = `Allowance Anomaly: Abnormally large allowance of ${allowance.display} ${tokenSymbol} granted to non-whitelisted protocol (${spenderName}). Monitor or cap allowance to reduce exposure.${staleSuffix}`;
+  }
+  // Check 6: Clean Verified Protocol with Unlimited Allowance
   else if (isUnlimited) {
     status = "informational";
-    reason = `Active unlimited allowance granted to verified protocol (${spenderName}). Consider revoking or capping allowance when not actively trading.`;
+    reason = `Active unlimited allowance granted to verified protocol (${spenderName}).${isStale ? ` Legacy permission granted ${approvedAgeDays} days ago — consider revoking if unused.` : " Consider revoking or capping allowance when not actively trading."}`;
   }
-  // Check 5: Limited Allowance to Clean Protocol
+  // Check 7: Clean Verified Protocol with Limited Allowance
   else {
     status = "informational";
-    reason = `Active limited allowance of ${allowance.display || approval.allowance?.raw} ${tokenSymbol} to verified protocol (${spenderName}).`;
+    reason = `Active limited allowance of ${allowance.display || approval.allowance?.raw} ${tokenSymbol} to verified protocol (${spenderName})${staleSuffix}.`;
   }
 
   return {
@@ -103,12 +147,15 @@ export function correlateApprovals(approvals, allowancesMap, securityMap) {
       display: approval.allowance?.raw,
     };
 
+    const isEoaFallback = approval._spenderMeta?.isContract === false;
     const security = securityMap[spenderAddr] || {
       address: spenderAddr,
-      contractName: approval.spender?.label || "Unknown Contract",
-      isOpenSource: true,
-      riskLevel: "safe",
-      signals: [],
+      contractName: approval.spender?.label || (isEoaFallback ? "EOA (Personal Wallet)" : "Unknown Contract"),
+      isContract: !isEoaFallback,
+      isEoa: isEoaFallback,
+      isOpenSource: approval._spenderMeta?.isOpenSource ?? true,
+      riskLevel: isEoaFallback ? "high" : "safe",
+      signals: isEoaFallback ? ["Critical: Spender is an Externally Owned Account (EOA), not a smart contract."] : [],
     };
 
     const exposure = evaluateSingleExposure(approval, allowance, security);

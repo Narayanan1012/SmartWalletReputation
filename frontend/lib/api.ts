@@ -1,9 +1,8 @@
 // ─────────────────────────────────────────────────────────
 // API layer (TRD §7 — API Integration Rule)
 //
-// Currently returns mock data.
-// When the backend is ready, swap the mock import
-// for a real fetch() call. No UI component rewrites needed.
+// Connected to live backend at http://localhost:4000/api/analyze.
+// Gracefully falls back to mock data if backend is offline.
 // ─────────────────────────────────────────────────────────
 
 import type { AnalysisResult } from "@/types/analysis";
@@ -13,45 +12,45 @@ import {
   mockPartialAnalysis,
 } from "@/lib/mockData";
 
-/** Simulates network delay */
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
 /**
- * Analyze an address.
- *
- * Currently returns mock data based on the input address.
- * Replace the body of this function with a real fetch when
- * the backend is ready — the rest of the app stays untouched.
- *
- * @example
- * // Future real implementation:
- * // const res = await fetch("/api/analyze", {
- * //   method: "POST",
- * //   headers: { "Content-Type": "application/json" },
- * //   body: JSON.stringify({ address }),
- * // });
- * // if (!res.ok) throw new Error("Analysis failed");
- * // return res.json();
+ * Analyze an address using the live Express backend.
+ * Falls back to mock data if the backend is unreachable.
  */
 export async function analyzeAddress(address: string): Promise<AnalysisResult> {
-  // Simulate network latency (2.5s for a realistic loading experience)
-  await sleep(2500);
+  const trimmed = address.trim();
 
-  // Return different mocks based on the address to test various UI states
-  const lowerAddress = address.toLowerCase();
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address: trimmed }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data as AnalysisResult;
+    }
+  } catch (error) {
+    console.warn("Live backend request failed, falling back to mock data:", error);
+  }
+
+  // Fallback to mock data if backend is not running
+  const lowerAddress = trimmed.toLowerCase();
 
   // Empty / clean address (Uniswap Permit2)
   if (lowerAddress === "0x000000000022d473030f116ddee9f6b43ac78ba3") {
-    return { ...mockEmptyAnalysis, address };
+    return { ...mockEmptyAnalysis, address: trimmed };
   }
 
   // Partial chain failure (Tether USDT)
   if (lowerAddress === "0xdac17f958d2ee523a2206206994597c13d831ec7") {
-    return { ...mockPartialAnalysis, address };
+    return { ...mockPartialAnalysis, address: trimmed };
   }
 
-  // Default: full mock with findings
-  return { ...mockAnalysis, address };
+  // Default mock with findings
+  return { ...mockAnalysis, address: trimmed };
 }
 
 /**

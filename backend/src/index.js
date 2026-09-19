@@ -6,6 +6,7 @@ import { getWalletApprovals } from "./services/approvals.js";
 import { verifyCurrentAllowance } from "./services/allowance.js";
 import { getContractSecurity } from "./services/security.js";
 import { correlateApprovals } from "./services/correlator.js";
+import { analyzeAddress } from "./services/analyzer.js";
 
 dotenv.config();
 
@@ -28,8 +29,8 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Milestone 2: Address analysis endpoint skeleton
-app.post("/api/analyze", (req, res) => {
+// Milestone 10 & 11: Full address analysis endpoint
+app.post("/api/analyze", async (req, res) => {
   const { address } = req.body || {};
 
   if (!address) {
@@ -42,11 +43,16 @@ app.post("/api/analyze", (req, res) => {
     });
   }
 
-  // Address accepted! Returning initial confirmation
-  res.json({
-    address: address.trim(),
-    status: "received"
-  });
+  try {
+    const analysisResult = await analyzeAddress(address.trim());
+    res.json(analysisResult);
+  } catch (error) {
+    console.error("Analysis pipeline error:", error);
+    res.status(500).json({
+      error: "Failed to complete address analysis",
+      details: error.message,
+    });
+  }
 });
 
 // Milestone 3: Alchemy connection test endpoint
