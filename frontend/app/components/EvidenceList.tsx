@@ -69,7 +69,7 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
                   CASE {caseNumber}
                 </span>
                 <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest">
-                  {evi.token ? `${evi.token} · ` : ""}{evi.chain || "EVM"}
+                  {evi.token ? `${evi.token} · ` : ""}EVM
                 </span>
               </div>
 

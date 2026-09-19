@@ -250,9 +250,8 @@ function GraphEdgeLine({ edge }: { edge: GraphEdge }) {
         fontFamily="monospace"
         fontWeight={600}
         letterSpacing="0.1em"
-        textTransform="uppercase"
       >
-        {labelText.length > 18 ? labelText.slice(0, 17) + "…" : labelText}
+        {(labelText.length > 18 ? labelText.slice(0, 17) + "…" : labelText).toUpperCase()}
       </text>
     </g>
   );
