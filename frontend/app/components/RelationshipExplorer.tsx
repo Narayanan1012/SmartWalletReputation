@@ -5,13 +5,11 @@ import type { Relationship } from "@/types/analysis";
 import { truncateAddress } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────
-// Relationship Explorer (PRD §P1)
+// Relationship Explorer (PRD §P1 & §17)
 //
-// 2D tree-style relationship graph built with SVG.
-// Acts as the container for future 3D integration (Member 3).
-//
-// Interface: <RelationshipExplorer relationships={data} />
-// Member 3 can later replace the internals with Three.js.
+// Tactical data map.
+// Sharp nodes, dashed connections, technical typography.
+// Built with SVG.
 // ─────────────────────────────────────────────────────────
 
 type Props = {
@@ -20,36 +18,32 @@ type Props = {
 };
 
 // ── Layout constants ──
-const NODE_W = 160;
-const NODE_H = 56;
-const VERTICAL_GAP = 100;
-const HORIZONTAL_GAP = 40;
-const TOP_PADDING = 40;
+const NODE_W = 180;
+const NODE_H = 64;
+const VERTICAL_GAP = 120;
+const HORIZONTAL_GAP = 60;
+const TOP_PADDING = 60;
 
-const TYPE_COLORS: Record<string, { bg: string; stroke: string; text: string; badge: string }> = {
+const TYPE_COLORS: Record<string, { bg: string; stroke: string; text: string }> = {
   approved: {
-    bg: "#1e293b",
-    stroke: "#3b82f6",
-    text: "#93c5fd",
-    badge: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    bg: "#050608", // mangaatha-background
+    stroke: "#4ade80", // mangaatha-safe
+    text: "#4ade80",
   },
   interacted: {
-    bg: "#1e293b",
-    stroke: "#64748b",
-    text: "#94a3b8",
-    badge: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
+    bg: "#050608",
+    stroke: "#a3a3a3", // neutral-400
+    text: "#a3a3a3",
   },
   received: {
-    bg: "#1e293b",
-    stroke: "#10b981",
-    text: "#6ee7b7",
-    badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    bg: "#050608",
+    stroke: "#4ade80",
+    text: "#4ade80",
   },
   deployed: {
-    bg: "#1e293b",
-    stroke: "#8b5cf6",
-    text: "#c4b5fd",
-    badge: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    bg: "#050608",
+    stroke: "#fbbf24", // attention
+    text: "#fbbf24",
   },
 };
 
@@ -75,7 +69,6 @@ function buildGraph(
   relationships: Relationship[],
   walletAddress: string
 ): { nodes: GraphNode[]; edges: GraphEdge[]; width: number; height: number } {
-  // Deduplicate targets
   const targetMap = new Map<string, { label: string; rels: Relationship[] }>();
 
   for (const rel of relationships) {
@@ -89,18 +82,16 @@ function buildGraph(
   const targets = Array.from(targetMap.entries());
   const childCount = targets.length;
 
-  // Calculate SVG dimensions
   const totalChildWidth = childCount * NODE_W + (childCount - 1) * HORIZONTAL_GAP;
-  const svgWidth = Math.max(totalChildWidth + 80, NODE_W + 80);
-  const svgHeight = TOP_PADDING + NODE_H + VERTICAL_GAP + NODE_H + 60;
+  const svgWidth = Math.max(totalChildWidth + 120, NODE_W + 120);
+  const svgHeight = TOP_PADDING + NODE_H + VERTICAL_GAP + NODE_H + 100;
 
-  // Root node (centered)
   const rootX = svgWidth / 2 - NODE_W / 2;
   const rootY = TOP_PADDING;
 
   const rootNode: GraphNode = {
     id: "root",
-    label: "Your Wallet",
+    label: "INVESTIGATION TARGET",
     address: walletAddress,
     x: rootX,
     y: rootY,
@@ -110,7 +101,6 @@ function buildGraph(
   const nodes: GraphNode[] = [rootNode];
   const edges: GraphEdge[] = [];
 
-  // Child nodes
   const startX = (svgWidth - totalChildWidth) / 2;
   const childY = TOP_PADDING + NODE_H + VERTICAL_GAP;
 
@@ -118,7 +108,7 @@ function buildGraph(
     const childX = startX + idx * (NODE_W + HORIZONTAL_GAP);
     const childNode: GraphNode = {
       id: `child-${idx}`,
-      label: target.label,
+      label: target.label.toUpperCase(),
       address: target.rels[0].to,
       x: childX,
       y: childY,
@@ -126,7 +116,6 @@ function buildGraph(
     };
     nodes.push(childNode);
 
-    // One edge per unique relationship type to this target
     const seenTypes = new Set<string>();
     for (const rel of target.rels) {
       const edgeKey = `${rel.type}-${rel.token || ""}`;
@@ -148,47 +137,55 @@ function buildGraph(
 }
 
 function GraphNodeRect({ node }: { node: GraphNode }) {
-  const fill = node.isRoot ? "#1e293b" : "#171717";
-  const stroke = node.isRoot ? "#3b82f6" : "#404040";
-
+  const fill = "#050608"; // background
+  const stroke = node.isRoot ? "#00f0ff" : "#333333"; // mint for root, dark border for children
+  const textPrimary = node.isRoot ? "#00f0ff" : "#e5e5e5";
+  
   return (
-    <g>
+    <g className="group cursor-crosshair">
       {/* Node background */}
       <rect
         x={node.x}
         y={node.y}
         width={NODE_W}
         height={NODE_H}
-        rx={8}
-        ry={8}
         fill={fill}
         stroke={stroke}
         strokeWidth={1}
+        className="transition-all duration-300 group-hover:stroke-[#00f0ff]"
       />
 
       {/* Label */}
       <text
         x={node.x + NODE_W / 2}
-        y={node.y + 22}
+        y={node.y + 26}
         textAnchor="middle"
-        fill={node.isRoot ? "#93c5fd" : "#e5e5e5"}
-        fontSize={12}
+        fill={textPrimary}
+        fontSize={10}
+        fontFamily="monospace"
         fontWeight={600}
+        letterSpacing="0.1em"
       >
-        {node.label.length > 18 ? node.label.slice(0, 17) + "…" : node.label}
+        {node.label.length > 20 ? node.label.slice(0, 19) + "…" : node.label}
       </text>
 
       {/* Address */}
       <text
         x={node.x + NODE_W / 2}
-        y={node.y + 40}
+        y={node.y + 44}
         textAnchor="middle"
         fill="#737373"
-        fontSize={10}
+        fontSize={11}
         fontFamily="monospace"
       >
         {truncateAddress(node.address)}
       </text>
+      
+      {/* Corner accents */}
+      <path d={`M ${node.x} ${node.y + 6} L ${node.x} ${node.y} L ${node.x + 6} ${node.y}`} fill="none" stroke={stroke} strokeWidth={2} />
+      <path d={`M ${node.x + NODE_W} ${node.y + 6} L ${node.x + NODE_W} ${node.y} L ${node.x + NODE_W - 6} ${node.y}`} fill="none" stroke={stroke} strokeWidth={2} />
+      <path d={`M ${node.x} ${node.y + NODE_H - 6} L ${node.x} ${node.y + NODE_H} L ${node.x + 6} ${node.y + NODE_H}`} fill="none" stroke={stroke} strokeWidth={2} />
+      <path d={`M ${node.x + NODE_W} ${node.y + NODE_H - 6} L ${node.x + NODE_W} ${node.y + NODE_H} L ${node.x + NODE_W - 6} ${node.y + NODE_H}`} fill="none" stroke={stroke} strokeWidth={2} />
     </g>
   );
 }
@@ -201,13 +198,12 @@ function GraphEdgeLine({ edge }: { edge: GraphEdge }) {
   const toX = edge.to.x + NODE_W / 2;
   const toY = edge.to.y;
 
-  // Bezier curve
+  // Sharp orthogonal routing
   const midY = (fromY + toY) / 2;
-  const path = `M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`;
+  const path = `M ${fromX} ${fromY} L ${fromX} ${midY} L ${toX} ${midY} L ${toX} ${toY}`;
 
-  // Edge label position
   const labelX = (fromX + toX) / 2;
-  const labelY = midY - 4;
+  const labelY = midY - 6;
   const labelText = edge.token
     ? `${edge.type} ${edge.token}`
     : edge.type;
@@ -220,42 +216,43 @@ function GraphEdgeLine({ edge }: { edge: GraphEdge }) {
         fill="none"
         stroke={colors.stroke}
         strokeWidth={1}
-        strokeDasharray={edge.type === "interacted" ? "6 3" : "none"}
-        opacity={0.5}
+        strokeDasharray="4 4"
+        opacity={0.6}
       />
 
-      {/* Arrow head */}
-      <circle
-        cx={toX}
-        cy={toY - 2}
-        r={2.5}
+      {/* Target connection point */}
+      <rect
+        x={toX - 2.5}
+        y={toY - 5}
+        width={5}
+        height={5}
         fill={colors.stroke}
-        opacity={0.7}
       />
 
       {/* Edge label background */}
       <rect
-        x={labelX - 40}
-        y={labelY - 9}
-        width={80}
-        height={18}
-        rx={4}
-        fill="#0a0a0a"
+        x={labelX - 45}
+        y={labelY - 10}
+        width={90}
+        height={20}
+        fill="#050608"
         stroke={colors.stroke}
-        strokeWidth={0.5}
-        opacity={0.9}
+        strokeWidth={1}
       />
 
       {/* Edge label text */}
       <text
         x={labelX}
-        y={labelY + 3}
+        y={labelY + 4}
         textAnchor="middle"
         fill={colors.text}
         fontSize={9}
-        fontWeight={500}
+        fontFamily="monospace"
+        fontWeight={600}
+        letterSpacing="0.1em"
+        textTransform="uppercase"
       >
-        {labelText.length > 16 ? labelText.slice(0, 15) + "…" : labelText}
+        {labelText.length > 18 ? labelText.slice(0, 17) + "…" : labelText}
       </text>
     </g>
   );
@@ -272,18 +269,13 @@ export default function RelationshipExplorer({
 
   if (relationships.length === 0) {
     return (
-      <div className="rounded-lg bg-neutral-900 border border-neutral-800 py-14 px-6 text-center animate-fadeIn">
-        <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-        </div>
-        <h3 className="text-white font-semibold mb-1">
-          No relationships found
+      <div className="w-full py-16 px-6 text-center border border-dashed border-mangaatha-border bg-mangaatha-surface-alt/50 animate-fadeIn">
+        <span className="text-mangaatha-text-muted text-2xl mb-4 block">⊘</span>
+        <h3 className="text-sm font-mono uppercase tracking-widest text-mangaatha-text-muted mb-2">
+          NO RELATIONSHIPS
         </h3>
-        <p className="text-neutral-500 text-sm max-w-sm mx-auto">
-          No relevant relationships were identified from the data available for
-          this analysis.
+        <p className="text-xs text-mangaatha-text-muted/60 font-mono max-w-sm mx-auto">
+          No external relationships were identified for this target.
         </p>
       </div>
     );
@@ -292,27 +284,25 @@ export default function RelationshipExplorer({
   return (
     <div className="animate-fadeIn">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-          <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-          Relationship Explorer
-          <span className="text-neutral-500 font-normal">
-            ({relationships.length})
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4 px-1">
+        <h3 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase">
+          Tactical Data Map
+          <span className="ml-2 px-1.5 py-0.5 bg-mangaatha-surface-alt text-mangaatha-text border border-mangaatha-border">
+            {String(relationships.length).padStart(2, '0')}
           </span>
         </h3>
 
         {/* Legend */}
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {Object.entries(TYPE_COLORS).map(([type, colors]) => (
             <span
               key={type}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium border ${colors.badge}`}
+              className="inline-flex items-center gap-1.5 text-[10px] font-mono tracking-widest uppercase"
+              style={{ color: colors.text }}
             >
               <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: colors.stroke }}
+                className="w-1.5 h-1.5 border"
+                style={{ borderColor: colors.stroke }}
               />
               {type}
             </span>
@@ -320,36 +310,35 @@ export default function RelationshipExplorer({
         </div>
       </div>
 
-      {/* SVG Graph Container — future 3D integration point */}
+      {/* SVG Graph Container */}
       <div
-        className="rounded-lg bg-neutral-900 border border-neutral-800 overflow-x-auto"
-        id="relationship-explorer-container"
-        data-integration="3d-ready"
+        className="relative bg-[#030406] border border-mangaatha-border overflow-x-auto"
       >
         <svg
           width={graph.width}
           height={graph.height}
           viewBox={`0 0 ${graph.width} ${graph.height}`}
-          className="w-full min-w-[500px]"
+          className="w-full min-w-[600px]"
           style={{ minHeight: graph.height }}
         >
-          {/* Grid pattern background */}
+          {/* Tactical grid background */}
           <defs>
             <pattern
-              id="grid"
-              width="30"
-              height="30"
+              id="tactical-grid"
+              width="40"
+              height="40"
               patternUnits="userSpaceOnUse"
             >
               <path
-                d="M 30 0 L 0 0 0 30"
+                d="M 40 0 L 0 0 0 40"
                 fill="none"
-                stroke="#262626"
-                strokeWidth="0.5"
+                stroke="#111111"
+                strokeWidth="1"
               />
+              <circle cx="40" cy="40" r="1" fill="#222222" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3" />
+          <rect width="100%" height="100%" fill="url(#tactical-grid)" />
 
           {/* Edges */}
           {graph.edges.map((edge) => (
@@ -361,14 +350,6 @@ export default function RelationshipExplorer({
             <GraphNodeRect key={node.id} node={node} />
           ))}
         </svg>
-
-        {/* 3D integration hint */}
-        <div className="px-4 py-2.5 border-t border-neutral-800 flex items-center justify-center gap-2 text-neutral-600 text-[10px]">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
-          </svg>
-          2D view • 3D visualization coming soon
-        </div>
       </div>
     </div>
   );
