@@ -44,6 +44,18 @@ export default function DevTestingPanel() {
   const [approvalsData, setApprovalsData] = useState<Record<string, unknown> | null>(null);
   const [isTestingApprovals, setIsTestingApprovals] = useState(false);
 
+  // Milestone 6: Allowance verification test state
+  const [allowanceData, setAllowanceData] = useState<Record<string, unknown> | null>(null);
+  const [isTestingAllowance, setIsTestingAllowance] = useState(false);
+
+  // Milestone 7: Contract Security test state
+  const [securityData, setSecurityData] = useState<Record<string, unknown> | null>(null);
+  const [isTestingSecurity, setIsTestingSecurity] = useState(false);
+
+  // Milestones 8 & 9: Correlation test state
+  const [correlationData, setCorrelationData] = useState<Record<string, unknown> | null>(null);
+  const [isTestingCorrelation, setIsTestingCorrelation] = useState(false);
+
   // Check backend health periodically
   const checkHealth = async () => {
     for (const port of [4000, 4001]) {
@@ -160,6 +172,85 @@ export default function DevTestingPanel() {
       setApprovalsData({ error: msg });
     } finally {
       setIsTestingApprovals(false);
+    }
+  };
+
+  const testAllowance = async () => {
+    setIsTestingAllowance(true);
+    setAllowanceData(null);
+    try {
+      // Test USDT on CoW Swap spender
+      const token = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+      const owner = testAddress.trim();
+      const spender = "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110";
+
+      const res = await fetch(
+        `http://localhost:${activePort}/api/test/allowance?token=${token}&owner=${owner}&spender=${spender}&chain=ethereum`,
+        { cache: "no-store" }
+      );
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      if (!isJson) {
+        throw new Error(
+          `Backend returned non-JSON (${res.status}). Please restart your backend server: press Ctrl+C, then run npm run dev.`
+        );
+      }
+      const data = await res.json();
+      setAllowanceData(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setAllowanceData({ error: msg });
+    } finally {
+      setIsTestingAllowance(false);
+    }
+  };
+
+  const testContractSecurity = async () => {
+    setIsTestingSecurity(true);
+    setSecurityData(null);
+    try {
+      const spender = "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110"; // GPv2VaultRelayer
+      const res = await fetch(
+        `http://localhost:${activePort}/api/test/security?spender=${spender}&chain=ethereum`,
+        { cache: "no-store" }
+      );
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      if (!isJson) {
+        throw new Error(
+          `Backend returned non-JSON (${res.status}). Please restart backend server (npm run dev).`
+        );
+      }
+      const data = await res.json();
+      setSecurityData(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSecurityData({ error: msg });
+    } finally {
+      setIsTestingSecurity(false);
+    }
+  };
+
+  const testCorrelation = async () => {
+    setIsTestingCorrelation(true);
+    setCorrelationData(null);
+    try {
+      const address = testAddress.trim();
+      const res = await fetch(
+        `http://localhost:${activePort}/api/test/correlation?address=${address}&chain=ethereum`,
+        { cache: "no-store" }
+      );
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      if (!isJson) {
+        throw new Error(
+          `Backend returned non-JSON (${res.status}). Please restart backend server (npm run dev).`
+        );
+      }
+      const data = await res.json();
+      setCorrelationData(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setCorrelationData({ error: msg });
+    } finally {
+      setIsTestingCorrelation(false);
     }
   };
 
@@ -371,6 +462,116 @@ export default function DevTestingPanel() {
                 </div>
                 <pre className="p-2 rounded bg-neutral-900 border border-neutral-800 font-mono text-[10px] text-neutral-300 overflow-x-auto max-h-36">
                   {JSON.stringify(approvalsData, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+
+          {/* Section 6: Live Allowance Verification (Milestone 6) */}
+          <div className="space-y-2 pt-2 border-t border-neutral-800/80">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-neutral-300 block">
+                5. Verify Allowance (Milestone 6):
+              </span>
+              <button
+                type="button"
+                onClick={testAllowance}
+                disabled={!backendOnline || isTestingAllowance}
+                className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded font-medium transition cursor-pointer"
+              >
+                {isTestingAllowance ? "Verifying..." : "Verify On-Chain"}
+              </button>
+            </div>
+            {allowanceData && (
+              <div className="p-2 rounded bg-neutral-900 border border-neutral-800 space-y-1 font-mono text-[10px]">
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Status:</span>
+                  <span className={allowanceData.isActive ? "text-emerald-400 font-bold" : "text-neutral-400"}>
+                    {allowanceData.isActive ? "ACTIVE EXPOSURE" : "SAFE / REVOKED"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Allowance:</span>
+                  <span className="text-amber-400 font-semibold">{String(allowanceData.display)}</span>
+                </div>
+                <div className="text-neutral-500 text-[9px] truncate">
+                  Spender: {String(allowanceData.spender)}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 7: GoPlus Contract Security (Milestone 7) */}
+          <div className="space-y-2 pt-2 border-t border-neutral-800/80">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-neutral-300 block">
+                6. Contract Security (Milestone 7):
+              </span>
+              <button
+                type="button"
+                onClick={testContractSecurity}
+                disabled={!backendOnline || isTestingSecurity}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded font-medium transition cursor-pointer"
+              >
+                {isTestingSecurity ? "Analyzing..." : "Scan Spender"}
+              </button>
+            </div>
+            {securityData && (
+              <div className="p-2.5 rounded bg-neutral-900 border border-neutral-800 space-y-1.5 font-mono text-[10px]">
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Contract:</span>
+                  <span className="text-neutral-200 font-bold">{String(securityData.contractName)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-400">Risk Level:</span>
+                  <span
+                    className={
+                      securityData.riskLevel === "high"
+                        ? "text-red-400 font-bold"
+                        : securityData.riskLevel === "attention"
+                        ? "text-amber-400 font-bold"
+                        : "text-emerald-400 font-bold"
+                    }
+                  >
+                    {String(securityData.riskLevel).toUpperCase()}
+                  </span>
+                </div>
+                {Array.isArray(securityData.signals) && (
+                  <div className="pt-1 border-t border-neutral-800">
+                    <div className="text-neutral-500 text-[9px] mb-1">Signals:</div>
+                    <ul className="list-disc pl-3 text-neutral-300 space-y-0.5 text-[9px]">
+                      {securityData.signals.map((s, i) => (
+                        <li key={i}>{String(s)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Section 8: Deterministic Correlation Engine (Milestones 8 & 9) */}
+          <div className="space-y-2 pt-2 border-t border-neutral-800/80">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-neutral-300 block">
+                7. Correlation Engine (Milestones 8 & 9):
+              </span>
+              <button
+                type="button"
+                onClick={testCorrelation}
+                disabled={!backendOnline || isTestingCorrelation}
+                className="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white rounded font-medium transition cursor-pointer shadow-md"
+              >
+                {isTestingCorrelation ? "Correlating..." : "Run Correlator"}
+              </button>
+            </div>
+            {correlationData && (
+              <div className="space-y-1 font-mono text-[10px]">
+                <div className="text-[10px] text-neutral-400">
+                  Exposures evaluated: {Array.isArray(correlationData.exposures) ? correlationData.exposures.length : 0}
+                </div>
+                <pre className="p-2 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 overflow-x-auto max-h-40">
+                  {JSON.stringify(correlationData, null, 2)}
                 </pre>
               </div>
             )}

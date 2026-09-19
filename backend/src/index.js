@@ -3,6 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { getLatestBlockNumber, getWalletActivity } from "./services/alchemy.js";
 import { getWalletApprovals } from "./services/approvals.js";
+import { verifyCurrentAllowance } from "./services/allowance.js";
+import { getContractSecurity } from "./services/security.js";
+import { correlateApprovals } from "./services/correlator.js";
 
 dotenv.config();
 
@@ -101,6 +104,103 @@ app.get("/api/test/approvals", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: "Failed to discover token approvals",
+      details: error.message,
+    });
+  }
+});
+
+// Milestone 6: Live on-chain allowance verification endpoint
+app.get("/api/test/allowance", async (req, res) => {
+  try {
+    const token = req.query.token || "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+    const owner = req.query.owner || "0x85f6be9460291e86e0fb49b07d0a83cc5f7206cd";
+    const spender = req.query.spender || "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110";
+    const chain = req.query.chain === "base" ? "base" : "ethereum";
+
+    if (!isValidEvmAddress(token) || !isValidEvmAddress(owner) || !isValidEvmAddress(spender)) {
+      return res.status(400).json({ error: "Invalid token, owner, or spender address format" });
+    }
+
+    const data = await verifyCurrentAllowance(token, owner, spender, chain);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to verify on-chain allowance",
+      details: error.message,
+    });
+  }
+});
+
+// Milestone 7: GoPlus contract security endpoint
+app.get("/api/test/security", async (req, res) => {
+  try {
+    const spender = req.query.spender || "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110";
+    const chain = req.query.chain === "base" ? "base" : "ethereum";
+
+    if (!isValidEvmAddress(spender)) {
+      return res.status(400).json({ error: "Invalid spender contract address format" });
+    }
+
+    const data = await getContractSecurity(spender, chain);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch contract security signals",
+      details: error.message,
+    });
+  }
+});
+
+// Milestones 8 & 9: Deterministic correlation endpoint
+app.get("/api/test/correlation", async (req, res) => {
+  try {
+    const address = req.query.address || "0x85f6be9460291e86e0fb49b07d0a83cc5f7206cd";
+    const chain = req.query.chain === "base" ? "base" : "ethereum";
+
+    if (!isValidEvmAddress(address)) {
+      return res.status(400).json({ error: "Invalid address format" });
+    }
+
+    const approvals = await getWalletApprovals(address, chain);
+    const allowancesMap = {};
+    const securityMap = {};
+
+    for (const appr of approvals) {
+      const token = appr.token.address;
+      const spender = appr.spender.address;
+      const key = `${token.toLowerCase()}:${spender.toLowerCase()}`;
+
+      const [liveAllowance, sec] = await Promise.all([
+        verifyCurrentAllowance(token, address, spender, chain).catch(() => ({
+          isActive: true,
+          isUnlimited: appr.allowance?.type === "unlimited",
+        })),
+        securityMap[spender.toLowerCase()]
+          ? Promise.resolve(securityMap[spender.toLowerCase()])
+          : getContractSecurity(spender, chain).catch(() => ({
+              address: spender,
+              contractName: appr.spender?.label || "Unknown Contract",
+              riskLevel: "safe",
+              signals: [],
+            })),
+      ]);
+
+      allowancesMap[key] = liveAllowance;
+      securityMap[spender.toLowerCase()] = sec;
+    }
+
+    const exposures = correlateApprovals(approvals, allowancesMap, securityMap);
+
+    res.json({
+      address,
+      chain,
+      approvalsCount: approvals.length,
+      exposuresCount: exposures.length,
+      exposures,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to correlate approvals and security signals",
       details: error.message,
     });
   }
