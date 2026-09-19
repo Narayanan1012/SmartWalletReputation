@@ -31,13 +31,13 @@ function ApprovalCard({ approval, onViewEvidence }: ApprovalCardProps) {
     : null;
 
   return (
-    <div className="rounded-xl bg-neutral-900/60 border border-neutral-800/60 backdrop-blur-sm p-5 hover:border-neutral-700/80 transition-colors duration-200">
+    <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-4 hover:border-neutral-700 transition-colors duration-150">
       {/* Top row — Token + Chain */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           {/* Token icon circle */}
-          <div className="w-10 h-10 rounded-full bg-blue-500/15 border border-blue-500/25 flex items-center justify-center flex-shrink-0">
-            <span className="text-blue-400 font-bold text-sm">
+          <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-blue-400 font-bold text-xs">
               {approval.token.symbol.slice(0, 3)}
             </span>
           </div>
@@ -51,39 +51,19 @@ function ApprovalCard({ approval, onViewEvidence }: ApprovalCardProps) {
 
         {/* Allowance badge */}
         <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${
             isUnlimited
-              ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
-              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+              ? "bg-amber-500/8 text-amber-400 border-amber-500/20"
+              : "bg-emerald-500/8 text-emerald-400 border-emerald-500/20"
           }`}
         >
           {isUnlimited ? (
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           ) : (
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           )}
           {isUnlimited ? "Unlimited" : "Limited"}
@@ -91,7 +71,7 @@ function ApprovalCard({ approval, onViewEvidence }: ApprovalCardProps) {
       </div>
 
       {/* Details grid */}
-      <div className="space-y-3 text-sm">
+      <div className="space-y-2.5 text-sm">
         {/* Spender */}
         <div className="flex items-start justify-between">
           <span className="text-neutral-500 text-xs">Approved to</span>
@@ -145,20 +125,10 @@ function ApprovalCard({ approval, onViewEvidence }: ApprovalCardProps) {
       {/* View Evidence button */}
       <button
         onClick={() => onViewEvidence(approval.spender.address)}
-        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-800/80 hover:bg-neutral-700/80 text-neutral-300 hover:text-white text-xs font-medium border border-neutral-700/50 hover:border-neutral-600 transition-all duration-200 cursor-pointer"
+        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-medium border border-neutral-700 hover:border-neutral-600 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
-        <svg
-          className="w-3.5 h-3.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
         View Evidence
       </button>
@@ -181,20 +151,10 @@ export default function ApprovalList({
 }: ApprovalListProps) {
   if (approvals.length === 0) {
     return (
-      <div className="rounded-2xl bg-neutral-900/40 border border-neutral-800/40 py-14 px-6 text-center animate-fadeIn">
-        <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-7 h-7 text-emerald-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
+      <div className="rounded-lg bg-neutral-900 border border-neutral-800 py-14 px-6 text-center animate-fadeIn">
+        <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <h3 className="text-white font-semibold mb-1">
@@ -219,7 +179,7 @@ export default function ApprovalList({
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {approvals.map((approval) => (
           <ApprovalCard
             key={approval.id}

@@ -18,20 +18,10 @@ type Props = {
 export default function EvidenceList({ evidence, onSelect }: Props) {
   if (evidence.length === 0) {
     return (
-      <div className="rounded-2xl bg-neutral-900/40 border border-neutral-800/40 py-14 px-6 text-center animate-fadeIn">
-        <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-7 h-7 text-blue-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
+      <div className="rounded-lg bg-neutral-900 border border-neutral-800 py-14 px-6 text-center animate-fadeIn">
+        <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
         <h3 className="text-white font-semibold mb-1">No evidence available</h3>
@@ -46,18 +36,8 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
     <div className="animate-fadeIn">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-          <svg
-            className="w-4 h-4 text-cyan-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
+          <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Evidence Chains
           <span className="text-neutral-500 font-normal">
@@ -75,12 +55,12 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
             <button
               key={evi.id}
               onClick={() => onSelect(evi)}
-              className={`w-full text-left rounded-xl border backdrop-blur-sm p-4 transition-all duration-200 cursor-pointer ${
+              className={`w-full text-left rounded-lg border p-4 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 isDanger
                   ? "bg-red-500/5 border-red-500/20 hover:border-red-500/40"
                   : isInfo
                     ? "bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40"
-                    : "bg-neutral-900/60 border-neutral-800/60 hover:border-neutral-700"
+                    : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -90,8 +70,8 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${
                         isDanger
-                          ? "bg-red-500/15 text-red-400 border-red-500/30"
-                          : "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                          ? "bg-red-500/10 text-red-400 border-red-500/20"
+                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
                       }`}
                     >
                       {evi.token}
@@ -101,25 +81,15 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border ${
                         isDanger
-                          ? "bg-red-500/10 text-red-400 border-red-500/25"
+                          ? "bg-red-500/8 text-red-400 border-red-500/20"
                           : isInfo
-                            ? "bg-blue-500/10 text-blue-400 border-blue-500/25"
-                            : "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                            ? "bg-blue-500/8 text-blue-400 border-blue-500/20"
+                            : "bg-amber-500/8 text-amber-400 border-amber-500/20"
                       }`}
                     >
                       {isDanger && (
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M12 9v2m0 4h.01"
-                          />
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01" />
                         </svg>
                       )}
                       {evi.exposure.status}
@@ -128,18 +98,8 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
                 </div>
 
                 {/* Right: chevron */}
-                <svg
-                  className="w-4 h-4 text-neutral-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
+                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
 

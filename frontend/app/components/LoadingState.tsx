@@ -54,10 +54,9 @@ export default function LoadingState({ address }: Props) {
 
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6 animate-fadeIn">
-      {/* Pulsing shield icon */}
+      {/* Shield icon */}
       <div className="relative mb-8">
-        <div className="absolute inset-0 w-16 h-16 rounded-full bg-blue-500/20 animate-ping" />
-        <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <div className="w-16 h-16 rounded-lg bg-blue-600 flex items-center justify-center">
           <svg
             className="w-8 h-8 text-white animate-pulse"
             fill="none"
@@ -99,11 +98,11 @@ export default function LoadingState({ address }: Props) {
             >
               {/* Icon */}
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
+                className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
                   isComplete
-                    ? "bg-emerald-500/20 text-emerald-400"
+                    ? "bg-emerald-500/15 text-emerald-400"
                     : isActive
-                      ? "bg-blue-500/20 text-blue-400"
+                      ? "bg-blue-500/15 text-blue-400"
                       : "bg-neutral-800 text-neutral-600"
                 }`}
               >
@@ -124,7 +123,7 @@ export default function LoadingState({ address }: Props) {
                 ) : isActive ? (
                   <div className="w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
                 ) : (
-                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-600" />
+                  <div className="w-2 h-2 rounded-full bg-neutral-600" />
                 )}
               </div>
 
@@ -145,10 +144,10 @@ export default function LoadingState({ address }: Props) {
         })}
       </div>
 
-      {/* Subtle progress bar */}
+      {/* Progress bar */}
       <div className="mt-10 w-full max-w-sm h-1 bg-neutral-800 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500 ease-out"
+          className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${(completedCount / STEPS.length) * 100}%` }}
         />
       </div>

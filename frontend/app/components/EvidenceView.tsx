@@ -106,28 +106,28 @@ function buildChainNodes(evidence: Evidence): ChainNode[] {
 
 const STATUS_COLORS = {
   safe: {
-    ring: "ring-emerald-500/30",
-    bg: "bg-emerald-500/15",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
     text: "text-emerald-400",
-    line: "from-emerald-500/40 to-emerald-500/10",
+    line: "bg-emerald-500/25",
   },
   warning: {
-    ring: "ring-amber-500/30",
-    bg: "bg-amber-500/15",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
     text: "text-amber-400",
-    line: "from-amber-500/40 to-amber-500/10",
+    line: "bg-amber-500/25",
   },
   danger: {
-    ring: "ring-red-500/30",
-    bg: "bg-red-500/15",
+    bg: "bg-red-500/10",
+    border: "border-red-500/20",
     text: "text-red-400",
-    line: "from-red-500/40 to-red-500/10",
+    line: "bg-red-500/25",
   },
   neutral: {
-    ring: "ring-blue-500/30",
-    bg: "bg-blue-500/15",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20",
     text: "text-blue-400",
-    line: "from-blue-500/40 to-blue-500/10",
+    line: "bg-blue-500/25",
   },
 };
 
@@ -148,7 +148,7 @@ function NodeIcon({ icon, status }: { icon: ChainNode["icon"]; status: ChainNode
 
   return (
     <div
-      className={`w-10 h-10 rounded-full ${colors.bg} ring-2 ${colors.ring} flex items-center justify-center flex-shrink-0`}
+      className={`w-10 h-10 rounded-lg ${colors.bg} border ${colors.border} flex items-center justify-center flex-shrink-0`}
     >
       <svg
         className={`w-5 h-5 ${colors.text}`}
@@ -175,15 +175,15 @@ export default function EvidenceView({ evidence, onClose }: Props) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fadeIn"
+        className="fixed inset-0 bg-black/60 z-40 animate-fadeIn"
         onClick={onClose}
       />
 
       {/* Slide-over panel */}
       <div className="fixed inset-y-0 right-0 w-full sm:max-w-lg z-50 flex">
-        <div className="w-full bg-neutral-950 border-l border-neutral-800/60 shadow-2xl overflow-y-auto flex flex-col animate-slideIn">
+        <div className="w-full bg-neutral-950 border-l border-neutral-800 overflow-y-auto flex flex-col animate-slideIn">
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-sm border-b border-neutral-800/50 px-6 py-5 flex items-center justify-between">
+          <div className="sticky top-0 z-10 bg-neutral-950 border-b border-neutral-800 px-6 py-5 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">
                 Evidence Chain
@@ -194,21 +194,11 @@ export default function EvidenceView({ evidence, onClose }: Props) {
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-lg bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               aria-label="Close evidence view"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -226,10 +216,10 @@ export default function EvidenceView({ evidence, onClose }: Props) {
 
                 return (
                   <div key={node.id} className="relative">
-                    {/* Connecting line */}
+                    {/* Connecting line — flat solid */}
                     {!isLast && (
                       <div
-                        className={`absolute left-5 top-10 w-0.5 bg-gradient-to-b ${colors.line}`}
+                        className={`absolute left-5 top-10 w-0.5 ${colors.line}`}
                         style={{ height: "calc(100% - 8px)" }}
                       />
                     )}
@@ -239,10 +229,10 @@ export default function EvidenceView({ evidence, onClose }: Props) {
                       onClick={() =>
                         setExpandedNode(isExpanded ? null : node.id)
                       }
-                      className={`relative flex items-start gap-4 w-full text-left p-3 -ml-3 rounded-xl transition-all duration-200 cursor-pointer ${
+                      className={`relative flex items-start gap-4 w-full text-left p-3 -ml-3 rounded-lg transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                         isExpanded
-                          ? "bg-neutral-900/80 ring-1 ring-neutral-700/50"
-                          : "hover:bg-neutral-900/40"
+                          ? "bg-neutral-900 border border-neutral-800"
+                          : "hover:bg-neutral-900/60"
                       }`}
                     >
                       <NodeIcon icon={node.icon} status={node.status} />
@@ -253,7 +243,7 @@ export default function EvidenceView({ evidence, onClose }: Props) {
                             {node.label}
                           </span>
                           <svg
-                            className={`w-3.5 h-3.5 text-neutral-500 transition-transform duration-200 ${
+                            className={`w-3.5 h-3.5 text-neutral-500 transition-transform duration-150 ${
                               isExpanded ? "rotate-90" : ""
                             }`}
                             fill="none"
@@ -317,10 +307,10 @@ export default function EvidenceView({ evidence, onClose }: Props) {
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800/50 px-6 py-4">
+          <div className="sticky bottom-0 bg-neutral-950 border-t border-neutral-800 px-6 py-4">
             <button
               onClick={onClose}
-              className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm font-medium border border-neutral-700 transition-colors cursor-pointer"
+              className="w-full px-4 py-2.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm font-medium border border-neutral-700 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               Close
             </button>
