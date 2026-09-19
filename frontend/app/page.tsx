@@ -9,6 +9,7 @@ import ResultsOverview from "./components/ResultsOverview";
 import ApprovalList from "./components/ApprovalCard";
 import ExposureList from "./components/ExposureCard";
 import EvidenceView from "./components/EvidenceView";
+import EvidenceList from "./components/EvidenceList";
 import RelationshipExplorer from "./components/RelationshipExplorer";
 
 // ─────────────────────────────────────────────────────────
@@ -16,7 +17,38 @@ import RelationshipExplorer from "./components/RelationshipExplorer";
 //   idle → loading → results | error
 //
 // PRD §5 — Basic User Flow
+// PRD §8 — Navigation: single-page dashboard with tabs
 // ─────────────────────────────────────────────────────────
+
+type ResultTab = "overview" | "approvals" | "exposures" | "evidence" | "relationships";
+
+const TABS: { id: ResultTab; label: string; icon: string }[] = [
+  {
+    id: "overview",
+    label: "Overview",
+    icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+  },
+  {
+    id: "approvals",
+    label: "Approvals",
+    icon: "M5 13l4 4L19 7",
+  },
+  {
+    id: "exposures",
+    label: "Exposures",
+    icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z",
+  },
+  {
+    id: "evidence",
+    label: "Evidence",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  },
+  {
+    id: "relationships",
+    label: "Explorer",
+    icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
+  },
+];
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>("idle");
@@ -24,6 +56,7 @@ export default function Home() {
   const [analyzedAddress, setAnalyzedAddress] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
+  const [activeTab, setActiveTab] = useState<ResultTab>("overview");
 
   // Find matching evidence by spender/contract address
   const openEvidence = (address: string) => {
@@ -40,6 +73,7 @@ export default function Home() {
     setAppState("loading");
     setAnalyzedAddress(address);
     setErrorMessage("");
+    setActiveTab("overview");
 
     try {
       const result = await analyzeAddress(address);
@@ -56,6 +90,24 @@ export default function Home() {
     setAnalysisResult(null);
     setAnalyzedAddress("");
     setErrorMessage("");
+    setActiveTab("overview");
+  };
+
+  // Badge count for tab
+  const getTabBadge = (tab: ResultTab): number | null => {
+    if (!analysisResult) return null;
+    switch (tab) {
+      case "approvals":
+        return analysisResult.approvals.length;
+      case "exposures":
+        return analysisResult.exposures.length;
+      case "evidence":
+        return analysisResult.evidence.length;
+      case "relationships":
+        return analysisResult.relationships.length;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -102,7 +154,11 @@ export default function Home() {
       </header>
 
       {/* ── Main Content Area (state-driven) ── */}
-      <main className={`relative z-10 flex-1 flex flex-col items-center px-6 py-12 max-w-5xl mx-auto w-full ${appState === "results" ? "justify-start pt-8" : "justify-center"}`}>
+      <main
+        className={`relative z-10 flex-1 flex flex-col items-center px-6 py-12 max-w-5xl mx-auto w-full ${
+          appState === "results" ? "justify-start pt-4" : "justify-center"
+        }`}
+      >
         {/* ───── IDLE: Landing page ───── */}
         {appState === "idle" && (
           <div className="flex flex-col items-center text-center w-full animate-fadeIn">
@@ -167,28 +223,115 @@ export default function Home() {
           <LoadingState address={analyzedAddress} />
         )}
 
-        {/* ───── RESULTS: Dashboard ───── */}
+        {/* ───── RESULTS: Dashboard with Tabs ───── */}
         {appState === "results" && analysisResult && (
-          <div className="w-full space-y-6">
+          <div className="w-full animate-fadeIn">
+            {/* ResultsOverview always visible at top */}
             <ResultsOverview result={analysisResult} onReset={handleReset} />
 
-            {/* Approvals Section */}
-            <ApprovalList
-              approvals={analysisResult.approvals}
-              onViewEvidence={openEvidence}
-            />
+            {/* Tab Navigation */}
+            <div className="mt-6 mb-6">
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-neutral-900/60 border border-neutral-800/50 overflow-x-auto">
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const badge = getTabBadge(tab.id);
+                  const hasExposures =
+                    tab.id === "exposures" &&
+                    analysisResult.exposures.length > 0;
 
-            {/* Exposures Section */}
-            <ExposureList
-              exposures={analysisResult.exposures}
-              onViewEvidence={openEvidence}
-            />
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                        isActive
+                          ? "bg-neutral-800 text-white shadow-sm"
+                          : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+                      }`}
+                    >
+                      <svg
+                        className="w-3.5 h-3.5 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d={tab.icon}
+                        />
+                      </svg>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      {badge !== null && badge > 0 && (
+                        <span
+                          className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                            hasExposures
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-neutral-700/60 text-neutral-400"
+                          }`}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-            {/* Relationship Explorer */}
-            <RelationshipExplorer
-              relationships={analysisResult.relationships}
-              walletAddress={analysisResult.address}
-            />
+            {/* Tab Content */}
+            <div className="min-h-[200px]">
+              {/* Overview — shows all sections stacked */}
+              {activeTab === "overview" && (
+                <div className="space-y-6 animate-fadeIn">
+                  <ApprovalList
+                    approvals={analysisResult.approvals}
+                    onViewEvidence={openEvidence}
+                  />
+                  <ExposureList
+                    exposures={analysisResult.exposures}
+                    onViewEvidence={openEvidence}
+                  />
+                  <RelationshipExplorer
+                    relationships={analysisResult.relationships}
+                    walletAddress={analysisResult.address}
+                  />
+                </div>
+              )}
+
+              {/* Approvals tab */}
+              {activeTab === "approvals" && (
+                <ApprovalList
+                  approvals={analysisResult.approvals}
+                  onViewEvidence={openEvidence}
+                />
+              )}
+
+              {/* Exposures tab */}
+              {activeTab === "exposures" && (
+                <ExposureList
+                  exposures={analysisResult.exposures}
+                  onViewEvidence={openEvidence}
+                />
+              )}
+
+              {/* Evidence tab */}
+              {activeTab === "evidence" && (
+                <EvidenceList
+                  evidence={analysisResult.evidence}
+                  onSelect={(evi) => setSelectedEvidence(evi)}
+                />
+              )}
+
+              {/* Relationships tab */}
+              {activeTab === "relationships" && (
+                <RelationshipExplorer
+                  relationships={analysisResult.relationships}
+                  walletAddress={analysisResult.address}
+                />
+              )}
+            </div>
           </div>
         )}
 
@@ -196,8 +339,18 @@ export default function Home() {
         {appState === "error" && (
           <div className="flex flex-col items-center text-center py-20 animate-fadeIn">
             <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
-              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                className="w-8 h-8 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">
