@@ -3,14 +3,11 @@
 import { useState, useEffect } from "react";
 
 // ─────────────────────────────────────────────────────────
-// Animated staged loading screen (PRD §P0 — Loading State)
+// Loading State (PRD §9 — Loading Screen)
 //
-// Shows progressive checkmarks:
-//   ✓ Address validated
-//   ✓ Checking blockchain activity
-//   ○ Checking approvals
-//   ○ Checking contract security
-//   ○ Building evidence
+// Live security scan interface.
+// Shows progressive scanning steps with technical typography
+// and a precise progress indicator.
 // ─────────────────────────────────────────────────────────
 
 type LoadingStep = {
@@ -19,12 +16,15 @@ type LoadingStep = {
 };
 
 const STEPS: LoadingStep[] = [
-  { label: "Address validated", delay: 400 },
-  { label: "Checking blockchain activity", delay: 900 },
-  { label: "Checking approvals", delay: 1400 },
-  { label: "Checking contract security", delay: 1800 },
-  { label: "Building evidence", delay: 2200 },
+  { label: "ADDRESS VERIFIED", delay: 400 },
+  { label: "ACTIVITY INDEXED", delay: 900 },
+  { label: "ACTIVE APPROVALS", delay: 1400 },
+  { label: "CONTRACT SIGNALS", delay: 1800 },
+  { label: "EVIDENCE TRACE", delay: 2200 },
 ];
+
+// Provide ~600ms padding after the last step completes for cinematic transition
+export const LOADING_DURATION = STEPS[STEPS.length - 1].delay + 600;
 
 type Props = {
   address: string;
@@ -46,41 +46,37 @@ export default function LoadingState({ address }: Props) {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Truncate address for display
   const shortAddr =
     address.length > 14
       ? `${address.slice(0, 6)}...${address.slice(-4)}`
       : address;
 
+  const progressPct = Math.round((completedCount / STEPS.length) * 100);
+
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 animate-fadeIn">
-      {/* Shield icon */}
-      <div className="relative mb-8">
-        <div className="w-16 h-16 rounded-lg bg-blue-600 flex items-center justify-center">
-          <svg
-            className="w-8 h-8 text-white animate-pulse"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
-        </div>
+    <div className="flex flex-col items-start max-w-lg mx-auto w-full py-20 px-6 animate-fadeIn font-mono">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-10 text-xs text-mangaatha-text-muted tracking-widest uppercase">
+        <span className="flex items-center gap-2 text-mangaatha-mint">
+          <span className="w-1.5 h-1.5 bg-mangaatha-mint rounded-full animate-pulse" />
+          MANGAATHA
+        </span>
+        <span className="opacity-50">/</span>
+        <span>SECURITY SCAN</span>
       </div>
 
-      {/* Title */}
-      <h2 className="text-xl sm:text-2xl font-semibold text-white mb-2">
-        Analyzing address
-      </h2>
-      <p className="text-sm font-mono text-neutral-400 mb-10">{shortAddr}</p>
+      {/* Target Info */}
+      <div className="mb-12">
+        <h2 className="text-xl sm:text-2xl text-mangaatha-text mb-2 tracking-tight uppercase font-sans font-medium">
+          Analyzing
+        </h2>
+        <p className="text-sm text-mangaatha-text-sec">
+          {shortAddr}
+        </p>
+      </div>
 
       {/* Step list */}
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full space-y-3 mb-12">
         {STEPS.map((step, idx) => {
           const isComplete = idx < completedCount;
           const isActive = idx === completedCount;
@@ -88,68 +84,46 @@ export default function LoadingState({ address }: Props) {
           return (
             <div
               key={step.label}
-              className={`flex items-center gap-3 transition-all duration-500 ${
+              className={`flex items-center gap-4 text-xs tracking-wide transition-all duration-300 ${
                 isComplete
-                  ? "opacity-100"
+                  ? "text-mangaatha-mint"
                   : isActive
-                    ? "opacity-100"
-                    : "opacity-40"
+                    ? "text-mangaatha-text"
+                    : "text-mangaatha-text-muted/40"
               }`}
             >
-              {/* Icon */}
-              <div
-                className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
-                  isComplete
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : isActive
-                      ? "bg-blue-500/15 text-blue-400"
-                      : "bg-neutral-800 text-neutral-600"
-                }`}
-              >
+              {/* Icon Status */}
+              <div className="w-4 flex items-center justify-center flex-shrink-0">
                 {isComplete ? (
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2.5}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <span>✓</span>
                 ) : isActive ? (
-                  <div className="w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                  <span className="animate-pulse">▶</span>
                 ) : (
-                  <div className="w-2 h-2 rounded-full bg-neutral-600" />
+                  <span>◌</span>
                 )}
               </div>
 
               {/* Label */}
-              <span
-                className={`text-sm transition-colors duration-500 ${
-                  isComplete
-                    ? "text-emerald-400"
-                    : isActive
-                      ? "text-white"
-                      : "text-neutral-500"
-                }`}
-              >
-                {step.label}
-              </span>
+              <span>{step.label}</span>
             </div>
           );
         })}
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-10 w-full max-w-sm h-1 bg-neutral-800 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${(completedCount / STEPS.length) * 100}%` }}
-        />
+      {/* Progress Bar & Percentage */}
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-3 text-xs text-mangaatha-text-muted">
+          <span>SYSTEM.TRACE</span>
+          <span className={`${progressPct === 100 ? 'text-mangaatha-mint' : ''} transition-colors duration-300`}>
+            {progressPct}%
+          </span>
+        </div>
+        <div className="w-full h-px bg-mangaatha-border relative">
+          <div
+            className="absolute left-0 top-0 h-full bg-mangaatha-mint transition-all duration-500 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
     </div>
   );
