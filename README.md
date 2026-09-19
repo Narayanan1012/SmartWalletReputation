@@ -64,7 +64,7 @@ In a terminal window:
 ```bash
 cd backend
 npm install
-npm run dev
+npm start
 ```
 The backend server will start on `http://localhost:4000`.  
 Verify health by visiting: `http://localhost:4000/api/health` (returns `{"status":"ok"}`).
@@ -95,8 +95,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
    * **Informational (Blue):** Verified open-source protocols with active allowances (standard advisory to monitor or cap permissions).
 5. **Trace Evidence:**
    Clicking "Trace Evidence" on any exposure opens a slide-over panel displaying the full factual breadcrumb: wallet address, token symbol, approval transaction hash, date, verified live allowance, detected contract security signals, and the deterministic rule triggered.
-6. **Explore Relationship Graph:**
-   The Relationships tab visualizes connections between the analyzed wallet, approved spenders, tokens, and counterparties.
 
 ---
 
