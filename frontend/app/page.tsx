@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import type { AnalysisResult, AppState } from "@/types/analysis";
+import type { AnalysisResult, AppState, Evidence } from "@/types/analysis";
 import { analyzeAddress } from "@/lib/api";
 import AddressInput from "./components/AddressInput";
 import LoadingState from "./components/LoadingState";
 import ResultsOverview from "./components/ResultsOverview";
 import ApprovalList from "./components/ApprovalCard";
 import ExposureList from "./components/ExposureCard";
+import EvidenceView from "./components/EvidenceView";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -21,6 +22,18 @@ export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analyzedAddress, setAnalyzedAddress] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
+
+  // Find matching evidence by spender/contract address
+  const openEvidence = (address: string) => {
+    if (!analysisResult) return;
+    const match = analysisResult.evidence.find(
+      (e) =>
+        e.spender.toLowerCase() === address.toLowerCase() ||
+        e.contract?.address.toLowerCase() === address.toLowerCase()
+    );
+    if (match) setSelectedEvidence(match);
+  };
 
   const handleAnalyze = async (address: string) => {
     setAppState("loading");
@@ -161,19 +174,13 @@ export default function Home() {
             {/* Approvals Section */}
             <ApprovalList
               approvals={analysisResult.approvals}
-              onViewEvidence={(spenderAddress) => {
-                // Part 6 will wire this to open the EvidenceView
-                console.log("View evidence for spender:", spenderAddress);
-              }}
+              onViewEvidence={openEvidence}
             />
 
             {/* Exposures Section */}
             <ExposureList
               exposures={analysisResult.exposures}
-              onViewEvidence={(contractAddress) => {
-                // Part 6 will wire this to open the EvidenceView
-                console.log("View evidence for contract:", contractAddress);
-              }}
+              onViewEvidence={openEvidence}
             />
           </div>
         )}
@@ -206,6 +213,14 @@ export default function Home() {
       <footer className="relative z-10 w-full border-t border-neutral-800/60 py-6 text-center text-xs text-neutral-500">
         <p>SmartWallet Reputation &bull; Built for Web3 Security</p>
       </footer>
+
+      {/* ── Evidence View Slide-Over ── */}
+      {selectedEvidence && (
+        <EvidenceView
+          evidence={selectedEvidence}
+          onClose={() => setSelectedEvidence(null)}
+        />
+      )}
     </div>
   );
 }
