@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { getLatestBlockNumber } from "./services/alchemy.js";
 
 dotenv.config();
 
@@ -42,6 +43,20 @@ app.post("/api/analyze", (req, res) => {
     address: address.trim(),
     status: "received"
   });
+});
+
+// Milestone 3: Alchemy connection test endpoint
+app.get("/api/test/alchemy", async (req, res) => {
+  try {
+    const chain = req.query.chain === "base" ? "base" : "ethereum";
+    const data = await getLatestBlockNumber(chain);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to connect to blockchain RPC",
+      details: error.message,
+    });
+  }
 });
 
 // Function to start server with automatic port fallback if port is in use
