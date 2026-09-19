@@ -9,6 +9,7 @@ import ResultsOverview from "./components/ResultsOverview";
 import ApprovalList from "./components/ApprovalCard";
 import ExposureList from "./components/ExposureCard";
 import EvidenceView from "./components/EvidenceView";
+import RelationshipExplorer from "./components/RelationshipExplorer";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -181,6 +182,12 @@ export default function Home() {
             <ExposureList
               exposures={analysisResult.exposures}
               onViewEvidence={openEvidence}
+            />
+
+            {/* Relationship Explorer */}
+            <RelationshipExplorer
+              relationships={analysisResult.relationships}
+              walletAddress={analysisResult.address}
             />
           </div>
         )}
