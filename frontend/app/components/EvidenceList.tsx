@@ -4,10 +4,10 @@ import type { Evidence } from "@/types/analysis";
 import { truncateAddress } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────
-// Evidence List — Tab view showing all evidence items
+// Evidence List (PRD §16 — Evidence List)
 //
-// Different from EvidenceView (the slide-over).
-// This renders a summary list; clicking opens the full view.
+// Each item feels like a case file.
+// The relationship sequence is visually prominent.
 // ─────────────────────────────────────────────────────────
 
 type Props = {
@@ -18,15 +18,13 @@ type Props = {
 export default function EvidenceList({ evidence, onSelect }: Props) {
   if (evidence.length === 0) {
     return (
-      <div className="rounded-lg bg-neutral-900 border border-neutral-800 py-14 px-6 text-center animate-fadeIn">
-        <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </div>
-        <h3 className="text-white font-semibold mb-1">No evidence available</h3>
-        <p className="text-neutral-500 text-sm max-w-sm mx-auto">
-          No evidence chains were generated for this analysis.
+      <div className="w-full py-16 px-6 text-center border border-dashed border-mangaatha-border bg-mangaatha-surface-alt/50 animate-fadeIn">
+        <span className="text-mangaatha-text-muted text-2xl mb-4 block">⊘</span>
+        <h3 className="text-sm font-mono uppercase tracking-widest text-mangaatha-text-muted mb-2">
+          NO EVIDENCE TRACES
+        </h3>
+        <p className="text-xs text-mangaatha-text-muted/60 font-mono max-w-sm mx-auto">
+          No actionable evidence chains were generated for this address.
         </p>
       </div>
     );
@@ -34,107 +32,111 @@ export default function EvidenceList({ evidence, onSelect }: Props) {
 
   return (
     <div className="animate-fadeIn">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-          <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Evidence Chains
-          <span className="text-neutral-500 font-normal">
-            ({evidence.length})
+      <div className="flex items-center justify-between mb-4 px-1">
+        <h3 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase">
+          Evidence Trace Files
+          <span className="ml-2 px-1.5 py-0.5 bg-mangaatha-surface-alt text-mangaatha-text border border-mangaatha-border">
+            {String(evidence.length).padStart(2, '0')}
           </span>
         </h3>
       </div>
 
-      <div className="space-y-3">
-        {evidence.map((evi) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {evidence.map((evi, idx) => {
           const isDanger = evi.exposure?.status === "potential";
+          const isWarning = evi.exposure?.status === "attention";
           const isInfo = evi.exposure?.status === "informational";
+
+          const caseNumber = String(idx + 1).padStart(3, '0');
 
           return (
             <button
               key={evi.id}
               onClick={() => onSelect(evi)}
-              className={`w-full text-left rounded-lg border p-4 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`group flex flex-col text-left border bg-mangaatha-surface transition-all duration-200 cursor-pointer focus-visible:outline-none ${
                 isDanger
-                  ? "bg-red-500/5 border-red-500/20 hover:border-red-500/40"
-                  : isInfo
-                    ? "bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40"
-                    : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
+                  ? "border-mangaatha-exposure/30 hover:border-mangaatha-exposure/60"
+                  : isWarning
+                    ? "border-mangaatha-attention/30 hover:border-mangaatha-attention/60"
+                    : isInfo
+                      ? "border-mangaatha-info/30 hover:border-mangaatha-info/60"
+                      : "border-mangaatha-border hover:border-mangaatha-text-muted/50"
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
-                {/* Left: token + status */}
-                <div className="flex items-center gap-2">
-                  {evi.token && (
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${
-                        isDanger
-                          ? "bg-red-500/10 text-red-400 border-red-500/20"
-                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      }`}
-                    >
-                      {evi.token}
-                    </span>
-                  )}
-                  {evi.exposure && (
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border ${
-                        isDanger
-                          ? "bg-red-500/8 text-red-400 border-red-500/20"
-                          : isInfo
-                            ? "bg-blue-500/8 text-blue-400 border-blue-500/20"
-                            : "bg-amber-500/8 text-amber-400 border-amber-500/20"
-                      }`}
-                    >
-                      {isDanger && (
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01" />
-                        </svg>
-                      )}
-                      {evi.exposure.status}
-                    </span>
-                  )}
-                </div>
-
-                {/* Right: chevron */}
-                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              {/* Case Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-mangaatha-border bg-mangaatha-surface-alt/50">
+                <span className="text-[10px] font-mono font-medium text-mangaatha-text-sec tracking-widest uppercase">
+                  CASE {caseNumber}
+                </span>
+                <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest">
+                  {evi.token ? `${evi.token} · ` : ""}{evi.chain || "EVM"}
+                </span>
               </div>
 
-              {/* Evidence chain summary */}
-              <div className="flex items-center gap-2 text-xs text-neutral-400 flex-wrap">
-                <span className="font-mono">
-                  {truncateAddress(evi.wallet)}
-                </span>
-                <span className="text-neutral-600">→</span>
-                <span>{evi.token || "approval"}</span>
-                <span className="text-neutral-600">→</span>
-                <span className="font-mono">
-                  {truncateAddress(evi.spender)}
-                </span>
-                {evi.contract?.signals && evi.contract.signals.length > 0 && (
-                  <>
-                    <span className="text-neutral-600">→</span>
-                    <span
-                      className={
-                        isDanger ? "text-red-400" : "text-neutral-400"
-                      }
-                    >
-                      {evi.contract.signals.length} signal
-                      {evi.contract.signals.length !== 1 ? "s" : ""}
+              {/* Trace Sequence */}
+              <div className="p-5 flex-1 flex flex-col">
+                
+                {/* Node 1: Wallet */}
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest">
+                    WALLET
+                  </span>
+                  <span className="text-xs font-mono text-mangaatha-text mt-0.5">
+                    {truncateAddress(evi.wallet)}
+                  </span>
+                </div>
+
+                {/* Connection */}
+                <div className="flex flex-col items-center py-2">
+                  <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest italic my-1">
+                    approved
+                  </span>
+                  <span className="text-mangaatha-text-muted text-[10px]">↓</span>
+                </div>
+
+                {/* Node 2: Contract */}
+                <div className="flex flex-col mb-4">
+                  <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest">
+                    CONTRACT
+                  </span>
+                  <span className="text-xs font-mono text-mangaatha-text mt-0.5">
+                    {truncateAddress(evi.spender)}
+                  </span>
+                </div>
+
+                {/* Signal / Exposure */}
+                {evi.exposure && (
+                  <div className={`mt-auto pt-4 border-t border-dashed ${
+                    isDanger ? "border-mangaatha-exposure/30" : 
+                    isWarning ? "border-mangaatha-attention/30" : 
+                    "border-mangaatha-info/30"
+                  }`}>
+                    <span className={`text-[10px] font-mono font-semibold uppercase tracking-widest block mb-1 ${
+                      isDanger ? "text-mangaatha-exposure" : 
+                      isWarning ? "text-mangaatha-attention" : 
+                      "text-mangaatha-info"
+                    }`}>
+                      {isDanger ? "⚠ POTENTIAL EXPOSURE" : 
+                       isWarning ? "⚠ NEEDS ATTENTION" : 
+                       "ℹ INFORMATIONAL"}
                     </span>
-                  </>
+                    <span className="text-xs text-mangaatha-text-sec line-clamp-2 leading-relaxed">
+                      {evi.exposure.reason}
+                    </span>
+                  </div>
                 )}
               </div>
 
-              {/* Reason preview */}
-              {evi.exposure?.reason && (
-                <p className="mt-2 text-xs text-neutral-500 line-clamp-2 leading-relaxed">
-                  {evi.exposure.reason}
-                </p>
-              )}
+              {/* Action */}
+              <div className={`px-4 py-3 bg-mangaatha-surface-alt flex justify-end border-t border-mangaatha-border`}>
+                <div className={`text-[10px] font-mono uppercase tracking-widest flex items-center gap-2 transition-colors duration-200 ${
+                  isDanger ? "text-mangaatha-exposure group-hover:text-mangaatha-exposure" : 
+                  "text-mangaatha-text-muted group-hover:text-mangaatha-mint"
+                }`}>
+                  TRACE DETAIL
+                  <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+                </div>
+              </div>
             </button>
           );
         })}
