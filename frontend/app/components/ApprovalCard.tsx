@@ -4,14 +4,11 @@ import type { Approval } from "@/types/analysis";
 import { truncateAddress } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────
-// Approval Cards (PRD §P0 — Approval Information)
+// Approval Cards (PRD §13 — Approval Cards)
 //
-// Displays active token approvals with:
-//   • Token symbol + chain
-//   • Spender address (with optional label)
-//   • Allowance type (Unlimited ⚠ / Limited)
-//   • Optional tx hash + date
-//   • View Evidence button
+// Designed to resemble forensic security records.
+// "Unlimited" allowances are visually dominant.
+// Heavy use of JetBrains Mono for technical data.
 // ─────────────────────────────────────────────────────────
 
 type ApprovalCardProps = {
@@ -23,121 +20,112 @@ function ApprovalCard({ approval, onViewEvidence }: ApprovalCardProps) {
   const isUnlimited = approval.allowance.type === "unlimited";
 
   const formattedDate = approval.approvedAt
-    ? new Date(approval.approvedAt).toLocaleDateString("en-US", {
-        year: "numeric",
+    ? new Date(approval.approvedAt).toLocaleDateString("en-GB", {
+        day: "2-digit",
         month: "short",
-        day: "numeric",
+        year: "numeric",
       })
     : null;
 
   return (
-    <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-4 hover:border-neutral-700 transition-colors duration-150">
-      {/* Top row — Token + Chain */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {/* Token icon circle */}
-          <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-blue-400 font-bold text-xs">
-              {approval.token.symbol.slice(0, 3)}
-            </span>
-          </div>
-          <div>
-            <h3 className="text-white font-semibold text-sm">
-              {approval.token.symbol}
-            </h3>
-            <span className="text-xs text-neutral-500">{approval.chain}</span>
-          </div>
+    <div className={`flex flex-col bg-mangaatha-surface border transition-colors duration-200 group ${
+      isUnlimited ? "border-mangaatha-attention/30 hover:border-mangaatha-attention/60" : "border-mangaatha-border hover:border-mangaatha-text-muted/50"
+    }`}>
+      
+      {/* Top Header */}
+      <div className={`px-5 py-4 border-b ${
+        isUnlimited ? "bg-mangaatha-attention/5 border-mangaatha-attention/20" : "border-mangaatha-border"
+      } flex items-center justify-between`}>
+        <div>
+          <h3 className="text-sm font-semibold text-mangaatha-text">
+            {approval.token.symbol}
+          </h3>
+          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mt-1 block">
+            {approval.chain}
+          </span>
         </div>
+        
+        {isUnlimited ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold tracking-widest uppercase bg-mangaatha-attention/10 text-mangaatha-attention border border-mangaatha-attention/20">
+            <span className="text-sm leading-none">∞</span> UNLIMITED
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-medium tracking-widest uppercase bg-mangaatha-surface-alt text-mangaatha-text-muted border border-mangaatha-border">
+            LIMITED
+          </span>
+        )}
+      </div>
 
-        {/* Allowance badge */}
-        <span
-          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${
-            isUnlimited
-              ? "bg-amber-500/8 text-amber-400 border-amber-500/20"
-              : "bg-emerald-500/8 text-emerald-400 border-emerald-500/20"
-          }`}
-        >
-          {isUnlimited ? (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          ) : (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      {/* Main Body */}
+      <div className="p-5 flex-1 flex flex-col justify-between">
+        
+        {/* Spender Info */}
+        <div className="mb-6">
+          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-2 block">
+            APPROVED SPENDER
+          </span>
+          {approval.spender.label && (
+            <div className="text-sm text-mangaatha-text font-medium mb-1">
+              {approval.spender.label}
+            </div>
           )}
-          {isUnlimited ? "Unlimited" : "Limited"}
-        </span>
-      </div>
-
-      {/* Details grid */}
-      <div className="space-y-2.5 text-sm">
-        {/* Spender */}
-        <div className="flex items-start justify-between">
-          <span className="text-neutral-500 text-xs">Approved to</span>
-          <div className="text-right">
-            {approval.spender.label && (
-              <span className="text-neutral-300 text-xs block mb-0.5">
-                {approval.spender.label}
-              </span>
-            )}
-            <span
-              className="text-neutral-400 font-mono text-xs"
-              title={approval.spender.address}
-            >
-              {truncateAddress(approval.spender.address)}
-            </span>
+          <div className="text-xs font-mono text-mangaatha-text-sec truncate" title={approval.spender.address}>
+            {approval.spender.address}
           </div>
         </div>
 
-        {/* Allowance amount (for limited) */}
-        {!isUnlimited && approval.allowance.raw && (
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-500 text-xs">Allowance</span>
-            <span className="text-neutral-300 font-mono text-xs">
-              {Number(approval.allowance.raw).toLocaleString()}
+        <div className="h-px w-full bg-mangaatha-border mb-6" />
+
+        {/* Technical Data Grid */}
+        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+          
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-1.5">
+              Allowance
+            </span>
+            <span className={`text-xs font-mono ${isUnlimited ? "text-mangaatha-attention" : "text-mangaatha-text-sec"}`}>
+              {isUnlimited ? "∞ Unlimited" : Number(approval.allowance.raw || 0).toLocaleString()}
             </span>
           </div>
-        )}
 
-        {/* Transaction hash */}
-        {approval.transactionHash && (
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-500 text-xs">Transaction</span>
-            <span
-              className="text-neutral-400 font-mono text-xs"
-              title={approval.transactionHash}
-            >
-              {truncateAddress(approval.transactionHash, 8, 6)}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-1.5">
+              Approved
+            </span>
+            <span className="text-xs font-mono text-mangaatha-text-sec">
+              {formattedDate || "Unknown"}
             </span>
           </div>
-        )}
 
-        {/* Date */}
-        {formattedDate && (
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-500 text-xs">Date</span>
-            <span className="text-neutral-400 text-xs">{formattedDate}</span>
+          <div className="flex flex-col col-span-2">
+            <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-1.5">
+              Transaction
+            </span>
+            <span className="text-xs font-mono text-mangaatha-text-sec truncate" title={approval.transactionHash || ""}>
+              {approval.transactionHash ? truncateAddress(approval.transactionHash, 8, 8) : "N/A"}
+            </span>
           </div>
-        )}
+
+        </div>
+
+        {/* Action */}
+        <div className="mt-8 pt-4 flex justify-end">
+          <button
+            onClick={() => onViewEvidence(approval.spender.address)}
+            className="text-[10px] font-mono text-mangaatha-text-muted group-hover:text-mangaatha-mint uppercase tracking-widest flex items-center gap-2 transition-colors duration-200 focus-visible:outline-none focus-visible:text-mangaatha-mint cursor-pointer"
+          >
+            TRACE EVIDENCE
+            <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+          </button>
+        </div>
+
       </div>
-
-      {/* View Evidence button */}
-      <button
-        onClick={() => onViewEvidence(approval.spender.address)}
-        className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-medium border border-neutral-700 hover:border-neutral-600 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        View Evidence
-      </button>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────
-// Approval List — renders all approval cards or empty state
+// Approval List
 // ─────────────────────────────────────────────────────────
 
 type ApprovalListProps = {
@@ -145,24 +133,16 @@ type ApprovalListProps = {
   onViewEvidence: (spenderAddress: string) => void;
 };
 
-export default function ApprovalList({
-  approvals,
-  onViewEvidence,
-}: ApprovalListProps) {
+export default function ApprovalList({ approvals, onViewEvidence }: ApprovalListProps) {
   if (approvals.length === 0) {
     return (
-      <div className="rounded-lg bg-neutral-900 border border-neutral-800 py-14 px-6 text-center animate-fadeIn">
-        <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h3 className="text-white font-semibold mb-1">
-          No active approvals found
+      <div className="w-full py-16 px-6 text-center border border-dashed border-mangaatha-border bg-mangaatha-surface-alt/50 animate-fadeIn">
+        <span className="text-mangaatha-safe text-2xl mb-4 block">✓</span>
+        <h3 className="text-sm font-mono uppercase tracking-widest text-mangaatha-text mb-2">
+          NO ACTIVE APPROVALS
         </h3>
-        <p className="text-neutral-500 text-sm max-w-sm mx-auto">
-          This address does not have any active token approvals in the data
-          available for this analysis.
+        <p className="text-xs text-mangaatha-text-muted font-mono max-w-sm mx-auto">
+          This address does not have any active token approvals.
         </p>
       </div>
     );
@@ -170,16 +150,16 @@ export default function ApprovalList({
 
   return (
     <div className="animate-fadeIn">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold text-sm">
+      <div className="flex items-center justify-between mb-4 px-1">
+        <h3 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase">
           Active Approvals
-          <span className="ml-2 text-neutral-500 font-normal">
-            ({approvals.length})
+          <span className="ml-2 px-1.5 py-0.5 bg-mangaatha-surface-alt text-mangaatha-text border border-mangaatha-border">
+            {String(approvals.length).padStart(2, '0')}
           </span>
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-mangaatha-border border border-mangaatha-border">
         {approvals.map((approval) => (
           <ApprovalCard
             key={approval.id}
