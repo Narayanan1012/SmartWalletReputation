@@ -11,6 +11,7 @@ import ExposureList from "./components/ExposureCard";
 import EvidenceView from "./components/EvidenceView";
 import EvidenceList from "./components/EvidenceList";
 import RelationshipExplorer from "./components/RelationshipExplorer";
+import GoldenCurves from "./components/GoldenCurves";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -140,7 +141,9 @@ export default function Home() {
       >
         {/* ───── IDLE: Landing page ───── */}
         {appState === "idle" && (
-          <div className="flex flex-col items-center text-center w-full animate-fadeIn max-w-3xl mx-auto">
+          <>
+            <GoldenCurves />
+            <div className="flex flex-col items-center text-center w-full animate-fadeIn max-w-3xl mx-auto relative z-10">
             
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-mangaatha-text mb-6">
               WEB3 SECURITY<br />
@@ -161,7 +164,8 @@ export default function Home() {
               <span className="hidden sm:inline opacity-30">|</span>
               <span>EVIDENCE TRACE</span>
             </div>
-          </div>
+            </div>
+          </>
         )}
 
         {/* ───── LOADING & TRANSITIONING ───── */}
@@ -247,7 +251,6 @@ export default function Home() {
               {activeTab === "overview" && (
                 <div className="space-y-6 animate-fadeIn">
                   <ApprovalList approvals={analysisResult.approvals} onViewEvidence={openEvidence} />
-                  <ExposureList exposures={analysisResult.exposures} onViewEvidence={openEvidence} />
                   <RelationshipExplorer relationships={analysisResult.relationships} walletAddress={analysisResult.address} />
                 </div>
               )}

@@ -159,7 +159,7 @@ export default function ApprovalList({ approvals, onViewEvidence }: ApprovalList
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-mangaatha-border border border-mangaatha-border">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {approvals.map((approval) => (
           <ApprovalCard
             key={approval.id}

@@ -154,102 +154,107 @@ export default function EvidenceView({ evidence, onClose }: Props) {
       />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 w-full sm:max-w-xl z-50 flex shadow-2xl">
-        <div className="w-full bg-mangaatha-surface border-l border-mangaatha-border overflow-y-auto flex flex-col animate-slideIn">
-          
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-mangaatha-surface border-b border-mangaatha-border px-6 py-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase mb-1">
-                Forensic Analysis
-              </h2>
-              <h1 className="text-lg font-bold text-mangaatha-text tracking-widest uppercase font-sans">
-                EVIDENCE TRACE
-              </h1>
-            </div>
-            <button
-              onClick={onClose}
-              className="px-3 py-2 border border-mangaatha-border text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest hover:text-mangaatha-text hover:border-mangaatha-text-muted transition-colors duration-200 focus-visible:outline-none focus-visible:border-mangaatha-mint"
-              aria-label="Close evidence trace"
-            >
-              CLOSE [ESC]
-            </button>
-          </div>
-
-          {/* Timeline Content */}
-          <div className="flex-1 px-8 py-10 relative overflow-hidden">
+      <div className="fixed inset-0 z-50 pointer-events-none">
+        <div className="absolute inset-y-0 right-0 w-full sm:max-w-xl pointer-events-auto flex shadow-2xl">
+          <div className="w-full h-dvh bg-mangaatha-surface border-l border-mangaatha-border flex flex-col overflow-hidden animate-slideIn">
             
-            {/* Master guide line background (very faint) */}
-            <div className="absolute left-[59px] top-10 bottom-10 w-px bg-mangaatha-border/30" />
+            {/* Header */}
+            <div className="flex-shrink-0 bg-mangaatha-surface border-b border-mangaatha-border px-6 py-6 flex items-center justify-between z-10">
+              <div>
+                <h2 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase mb-1">
+                  Forensic Analysis
+                </h2>
+                <h1 className="text-lg font-bold text-mangaatha-text tracking-widest uppercase font-sans">
+                  EVIDENCE TRACE
+                </h1>
+              </div>
+              <button
+                onClick={onClose}
+                className="px-3 py-2 border border-mangaatha-border text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest hover:text-mangaatha-text hover:border-mangaatha-text-muted transition-colors duration-200 focus-visible:outline-none focus-visible:border-mangaatha-mint"
+                aria-label="Close evidence trace"
+              >
+                CLOSE [ESC]
+              </button>
+            </div>
 
-            {nodes.map((node, idx) => {
-              const isVisible = idx < mountedNodes;
-              const isLast = idx === nodes.length - 1;
-              const colors = STATUS_COLORS[node.status];
-              const details = Array.isArray(node.detail) ? node.detail : [node.detail];
+            {/* Timeline Content - ONLY SCROLLABLE AREA */}
+            <div 
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 py-10 relative"
+              style={{ scrollbarGutter: "stable" }}
+            >
+              
+              {/* Master guide line background (very faint) */}
+              <div className="absolute left-[59px] top-10 bottom-10 w-px bg-mangaatha-border/30" />
 
-              return (
-                <div 
-                  key={node.id} 
-                  className={`relative flex items-start transition-all duration-500 ease-out ${
-                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                  }`}
-                >
-                  
-                  {/* Step Number */}
-                  <div className={`w-8 pt-1 text-[10px] font-mono font-medium tracking-widest ${
-                    node.status === 'neutral' ? 'text-mangaatha-text-muted' : colors.text
-                  }`}>
-                    {node.step}
-                  </div>
+              {nodes.map((node, idx) => {
+                const isVisible = idx < mountedNodes;
+                const isLast = idx === nodes.length - 1;
+                const colors = STATUS_COLORS[node.status];
+                const details = Array.isArray(node.detail) ? node.detail : [node.detail];
 
-                  {/* Vertical Track Area */}
-                  <div className="relative w-8 flex flex-col items-center flex-shrink-0">
-                    {/* Node Dot */}
-                    <div className={`w-2 h-2 mt-1.5 rounded-full border ${colors.border} bg-mangaatha-surface z-10 ${colors.glow}`} />
+                return (
+                  <div 
+                    key={node.id} 
+                    className={`relative flex items-start transition-all duration-500 ease-out ${
+                      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                    }`}
+                  >
                     
-                    {/* Connection Line & Label */}
-                    {!isLast && (
-                      <div className="flex flex-col items-center mt-2 pb-6 min-h-[60px]">
-                        <div className={`w-px flex-1 ${STATUS_COLORS[nodes[idx+1].status].line}`} />
-                        <span className="text-mangaatha-text-muted text-[10px]">▼</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content Box */}
-                  <div className={`flex-1 pb-10 ${isLast ? 'pb-4' : ''}`}>
-                    <h3 className={`text-sm font-semibold tracking-widest uppercase mb-2 ${colors.text}`}>
-                      {node.label}
-                    </h3>
-                    
-                    <div className={`p-4 border ${colors.border} bg-mangaatha-surface-alt/30`}>
-                      {details.map((detail, i) => {
-                        // Check if detail is an address by length/prefix
-                        const isAddress = detail.startsWith('0x') && detail.length > 20;
-                        return (
-                          <div key={i} className={`text-xs font-mono mb-1 last:mb-0 ${
-                            node.status === 'neutral' ? 'text-mangaatha-text-sec' : colors.text
-                          }`}>
-                            {isAddress ? detail : detail}
-                          </div>
-                        );
-                      })}
+                    {/* Step Number */}
+                    <div className={`w-8 pt-1 text-[10px] font-mono font-medium tracking-widest ${
+                      node.status === 'neutral' ? 'text-mangaatha-text-muted' : colors.text
+                    }`}>
+                      {node.step}
                     </div>
-                    
-                    {/* Connection Text (e.g. 'approved', 'authorized spender') */}
-                    {!isLast && node.connectionText && (
-                      <div className="mt-4 flex items-center gap-4 text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase">
-                        <span>│</span>
-                        <span className="italic">{node.connectionText}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
 
+                    {/* Vertical Track Area */}
+                    <div className="relative w-8 flex flex-col items-center flex-shrink-0">
+                      {/* Node Dot */}
+                      <div className={`w-2 h-2 mt-1.5 rounded-full border ${colors.border} bg-mangaatha-surface z-10 ${colors.glow}`} />
+                      
+                      {/* Connection Line & Label */}
+                      {!isLast && (
+                        <div className="flex flex-col items-center mt-2 pb-6 min-h-[60px]">
+                          <div className={`w-px flex-1 ${STATUS_COLORS[nodes[idx+1].status].line}`} />
+                          <span className="text-mangaatha-text-muted text-[10px]">▼</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content Box */}
+                    <div className={`flex-1 pb-10 ${isLast ? 'pb-4' : ''}`}>
+                      <h3 className={`text-sm font-semibold tracking-widest uppercase mb-2 ${colors.text}`}>
+                        {node.label}
+                      </h3>
+                      
+                      <div className={`p-4 border ${colors.border} bg-mangaatha-surface-alt/30`}>
+                        {details.map((detail, i) => {
+                          // Check if detail is an address by length/prefix
+                          const isAddress = detail.startsWith('0x') && detail.length > 20;
+                          return (
+                            <div key={i} className={`text-xs font-mono mb-1 last:mb-0 ${
+                              node.status === 'neutral' ? 'text-mangaatha-text-sec' : colors.text
+                            }`}>
+                              {isAddress ? detail : detail}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Connection Text (e.g. 'approved', 'authorized spender') */}
+                      {!isLast && node.connectionText && (
+                        <div className="mt-4 flex items-center gap-4 text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase">
+                          <span>│</span>
+                          <span className="italic">{node.connectionText}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
         </div>
       </div>
     </>

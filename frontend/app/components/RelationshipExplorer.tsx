@@ -317,8 +317,7 @@ export default function RelationshipExplorer({
           width={graph.width}
           height={graph.height}
           viewBox={`0 0 ${graph.width} ${graph.height}`}
-          className="w-full min-w-[600px]"
-          style={{ minHeight: graph.height }}
+          className="mx-auto block"
         >
           {/* Tactical grid background */}
           <defs>
