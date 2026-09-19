@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { getLatestBlockNumber } from "./services/alchemy.js";
+import { getLatestBlockNumber, getWalletActivity } from "./services/alchemy.js";
+import { getWalletApprovals } from "./services/approvals.js";
 
 dotenv.config();
 
@@ -57,6 +58,59 @@ app.get("/api/test/alchemy", async (req, res) => {
       details: error.message,
     });
   }
+});
+
+// Milestone 4: Address activity test endpoint
+app.get("/api/test/activity", async (req, res) => {
+  try {
+    const address = req.query.address || "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+    const chain = req.query.chain === "base" ? "base" : "ethereum";
+    const count = parseInt(req.query.count || "5", 10);
+
+    if (!isValidEvmAddress(address)) {
+      return res.status(400).json({ error: "Invalid address format" });
+    }
+
+    const data = await getWalletActivity(address, chain, count);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch wallet activity from Alchemy",
+      details: error.message,
+    });
+  }
+});
+
+// Milestone 5: Token approvals discovery endpoint
+app.get("/api/test/approvals", async (req, res) => {
+  try {
+    const address = req.query.address || "0x85f6be9460291e86e0fb49b07d0a83cc5f7206cd";
+    const chain = req.query.chain === "base" ? "base" : "ethereum";
+
+    if (!isValidEvmAddress(address)) {
+      return res.status(400).json({ error: "Invalid address format" });
+    }
+
+    const approvals = await getWalletApprovals(address, chain);
+    res.json({
+      address,
+      chain,
+      count: approvals.length,
+      approvals,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to discover token approvals",
+      details: error.message,
+    });
+  }
+});
+
+// Catch-all route to ensure JSON is always returned instead of HTML 404
+app.use((req, res) => {
+  res.status(404).json({
+    error: `Route not found: ${req.method} ${req.originalUrl}. Please restart the backend server (Ctrl+C then npm run dev) to load new routes.`,
+  });
 });
 
 // Function to start server with automatic port fallback if port is in use

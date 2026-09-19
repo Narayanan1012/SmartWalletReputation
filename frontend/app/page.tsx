@@ -11,6 +11,8 @@ import ExposureList from "./components/ExposureCard";
 import EvidenceView from "./components/EvidenceView";
 import EvidenceList from "./components/EvidenceList";
 import RelationshipExplorer from "./components/RelationshipExplorer";
+// [TEMPORARY: backend-core testing panel - remove before merging to main]
+import DevTestingPanel from "./components/DevTestingPanel";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -381,6 +383,9 @@ export default function Home() {
           onClose={() => setSelectedEvidence(null)}
         />
       )}
+
+      {/* [TEMPORARY: backend-core testing panel - remove before merging to main] */}
+      <DevTestingPanel />
     </div>
   );
 }
