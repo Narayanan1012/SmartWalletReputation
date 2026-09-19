@@ -16,6 +16,7 @@ export type Approval = {
   token: {
     address: string;
     symbol: string;
+    name?: string;
   };
   spender: {
     address: string;

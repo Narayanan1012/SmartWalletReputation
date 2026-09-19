@@ -14,15 +14,20 @@ import type { AnalysisResult } from "@/types/analysis";
 type Props = {
   result: AnalysisResult;
   onReset: () => void;
+  onViewEvidence?: (contractAddress: string) => void;
+  onSelectTab?: (tab: "overview" | "approvals" | "exposures" | "evidence") => void;
 };
 
-export default function ResultsOverview({ result }: Props) {
+export default function ResultsOverview({ result, onReset, onViewEvidence, onSelectTab }: Props) {
   const hasPartialChain = result.chains.some((c) => c.status === "error");
   
   // Find highest severity exposure to feature
   const potentialExposure = result.exposures.find(e => e.status === "potential");
   const attentionExposure = result.exposures.find(e => e.status === "attention");
   const highestExposure = potentialExposure || attentionExposure || result.exposures[0];
+
+  const potentialCount = result.exposures.filter(e => e.status === "potential").length;
+  const attentionCount = result.exposures.filter(e => e.status === "attention").length;
 
   return (
     <div className="w-full animate-fadeIn flex flex-col gap-6">
@@ -69,7 +74,13 @@ export default function ResultsOverview({ result }: Props) {
                    highestExposure.status === 'attention' ? 'NEEDS ATTENTION' : 'INFORMATIONAL'}
                 </span>
                 <span className="text-xs font-mono text-mangaatha-text-muted">
-                  {String(result.exposures.length).padStart(2, '0')} DETECTED
+                  {String(
+                    highestExposure.status === 'potential'
+                      ? potentialCount
+                      : highestExposure.status === 'attention'
+                        ? attentionCount
+                        : result.exposures.length
+                  ).padStart(2, '0')} DETECTED
                 </span>
               </div>
 
@@ -90,20 +101,29 @@ export default function ResultsOverview({ result }: Props) {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest">Spender</span>
-                  <span className="text-sm font-mono text-mangaatha-text-sec mt-1">{highestExposure.contract.slice(0,6)}...{highestExposure.contract.slice(-4)}</span>
+                  <span className="text-sm font-mono text-mangaatha-text-sec mt-1 font-mono">{highestExposure.contract.slice(0,6)}...{highestExposure.contract.slice(-4)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Action */}
-            <div className="mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-l border-mangaatha-border sm:pl-6 flex items-center sm:items-end justify-between sm:flex-col min-w-[140px]">
+            {/* Action — View Investigation Button */}
+            <div className="mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-l border-mangaatha-border sm:pl-6 flex items-center sm:items-end justify-between sm:flex-col min-w-[170px]">
               <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest text-right hidden sm:block">Action Required</span>
               
-              {/* To trace evidence, the user uses the tabs below, so this acts as a prompt */}
-              <div className="text-xs font-mono text-mangaatha-mint flex items-center gap-2 group cursor-pointer">
-                <span>TRACE EVIDENCE</span>
-                <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onViewEvidence && highestExposure.contract) {
+                    onViewEvidence(highestExposure.contract);
+                  } else if (onSelectTab) {
+                    onSelectTab("exposures");
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-3 py-2 border border-mangaatha-mint/40 bg-mangaatha-mint/10 hover:bg-mangaatha-mint/20 text-mangaatha-mint text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer rounded-sm focus-visible:outline-none"
+              >
+                <span>VIEW INVESTIGATION</span>
+                <span className="transition-transform duration-200">→</span>
+              </button>
             </div>
           </div>
         </div>
@@ -125,31 +145,46 @@ export default function ResultsOverview({ result }: Props) {
         </div>
       )}
 
-      {/* ── Secondary Context Bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-mangaatha-border border border-mangaatha-border">
+      {/* ── Secondary Context Bar (3-card balanced layout without relationship graph) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-mangaatha-border border border-mangaatha-border">
         
-        {/* Approvals */}
+        {/* Active Approvals */}
         <div className="bg-mangaatha-surface p-4 flex flex-col justify-between">
           <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-3">Active Approvals</span>
           <span className="text-2xl font-mono text-mangaatha-text">{String(result.approvals.length).padStart(2, '0')}</span>
         </div>
 
-        {/* Evidence Chains */}
+        {/* Security Exposures */}
         <div className="bg-mangaatha-surface p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-3">Evidence Traces</span>
-          <span className="text-2xl font-mono text-mangaatha-text">{String(result.evidence.length).padStart(2, '0')}</span>
+          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-3">
+            Risk Exposures ({potentialCount} Critical / {attentionCount} Anomaly)
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className={`text-2xl font-mono ${potentialCount > 0 ? "text-mangaatha-exposure font-bold" : attentionCount > 0 ? "text-mangaatha-attention font-bold" : "text-mangaatha-text"}`}>
+              {String(potentialCount + attentionCount).padStart(2, '0')}
+            </span>
+            {potentialCount > 0 ? (
+              <span className="text-[10px] font-mono text-mangaatha-exposure">
+                ({potentialCount} CRITICAL)
+              </span>
+            ) : attentionCount > 0 ? (
+              <span className="text-[10px] font-mono text-mangaatha-attention">
+                ({attentionCount} ANOMALIES)
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono text-mangaatha-mint">
+                (0 RISKS)
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Relationships */}
+        {/* Chains Analyzed */}
         <div className="bg-mangaatha-surface p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-3">Relationships</span>
-          <span className="text-2xl font-mono text-mangaatha-text">{String(result.relationships.length).padStart(2, '0')}</span>
-        </div>
-
-        {/* Chains */}
-        <div className="bg-mangaatha-surface p-4 flex flex-col justify-between">
-          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-3">Chains Analyzed</span>
-          <span className="text-2xl font-mono text-mangaatha-text">{String(result.chains.length).padStart(2, '0')}</span>
+          <span className="text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest mb-3">Networks Scanned</span>
+          <span className="text-2xl font-mono text-mangaatha-text">
+            {result.chains.filter(c => c.status === "success").map(c => c.chain).join(" + ") || "Ethereum + Base"}
+          </span>
         </div>
 
       </div>

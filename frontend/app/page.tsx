@@ -10,7 +10,6 @@ import ApprovalList from "./components/ApprovalCard";
 import ExposureList from "./components/ExposureCard";
 import EvidenceView from "./components/EvidenceView";
 import EvidenceList from "./components/EvidenceList";
-import RelationshipExplorer from "./components/RelationshipExplorer";
 import GoldenCurves from "./components/GoldenCurves";
 
 // ─────────────────────────────────────────────────────────
@@ -19,14 +18,13 @@ import GoldenCurves from "./components/GoldenCurves";
 // ─────────────────────────────────────────────────────────
 
 type ExtendedAppState = AppState | "transitioning";
-type ResultTab = "overview" | "approvals" | "exposures" | "evidence" | "relationships";
+type ResultTab = "overview" | "approvals" | "exposures" | "evidence";
 
 const TABS: { id: ResultTab; label: string; icon: string }[] = [
   { id: "overview", label: "OVERVIEW", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
   { id: "approvals", label: "APPROVALS", icon: "M5 13l4 4L19 7" },
   { id: "exposures", label: "EXPOSURES", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" },
   { id: "evidence", label: "EVIDENCE", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-  { id: "relationships", label: "GRAPH", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" },
 ];
 
 export default function Home() {
@@ -36,6 +34,7 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
   const [activeTab, setActiveTab] = useState<ResultTab>("overview");
+  const [copied, setCopied] = useState(false);
 
   const openEvidence = useCallback((address: string) => {
     if (!analysisResult) return;
@@ -85,7 +84,10 @@ export default function Home() {
     if (!analysisResult) return null;
     switch (tab) {
       case "approvals": return analysisResult.approvals.length;
-      case "exposures": return analysisResult.exposures.length;
+      case "exposures": {
+        const riskCount = analysisResult.exposures.filter(e => e.status === "potential" || e.status === "attention").length;
+        return riskCount > 0 ? riskCount : analysisResult.exposures.length;
+      }
       case "evidence": return analysisResult.evidence.length;
       default: return null;
     }
@@ -184,8 +186,37 @@ export default function Home() {
                 <h2 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase mb-2">
                   Investigation
                 </h2>
-                <div className="text-xl sm:text-2xl font-mono text-mangaatha-text">
-                  {analyzedAddress}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="text-xl sm:text-2xl font-mono text-mangaatha-text break-all">
+                    {analyzedAddress}
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(analyzedAddress);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    title="Copy address"
+                    className="px-2 py-1 bg-mangaatha-surface-alt border border-mangaatha-border text-[10px] font-mono text-mangaatha-text-muted hover:text-mangaatha-mint hover:border-mangaatha-mint/40 transition-colors uppercase cursor-pointer"
+                  >
+                    {copied ? "[ COPIED ]" : "COPY"}
+                  </button>
+                  <a
+                    href={`https://etherscan.io/address/${analyzedAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-2 py-1 bg-mangaatha-surface-alt border border-mangaatha-border text-[10px] font-mono text-mangaatha-text-muted hover:text-mangaatha-mint hover:border-mangaatha-mint/40 transition-colors uppercase inline-flex items-center gap-1"
+                  >
+                    ETHERSCAN ↗
+                  </a>
+                  <a
+                    href={`https://basescan.org/address/${analyzedAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-2 py-1 bg-mangaatha-surface-alt border border-mangaatha-border text-[10px] font-mono text-mangaatha-text-muted hover:text-mangaatha-mint hover:border-mangaatha-mint/40 transition-colors uppercase inline-flex items-center gap-1"
+                  >
+                    BASESCAN ↗
+                  </a>
                 </div>
                 <div className="mt-2 flex items-center gap-3 text-xs font-mono">
                   <span className="text-mangaatha-text-sec bg-mangaatha-surface-alt px-2 py-0.5 border border-mangaatha-border">
@@ -198,14 +229,19 @@ export default function Home() {
               </div>
               <button
                 onClick={handleReset}
-                className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 border border-mangaatha-border hover:border-mangaatha-text-muted hover:text-mangaatha-text text-mangaatha-text-sec text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus-visible:outline-none focus-visible:border-mangaatha-mint"
+                className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 border border-mangaatha-border hover:border-mangaatha-text-muted hover:text-mangaatha-text text-mangaatha-text-sec text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus-visible:outline-none focus-visible:border-mangaatha-mint cursor-pointer"
               >
                 New Investigation
               </button>
             </div>
 
-            {/* ResultsOverview (to be redesigned in Part 4) */}
-            <ResultsOverview result={analysisResult} onReset={handleReset} />
+            {/* ResultsOverview */}
+            <ResultsOverview
+              result={analysisResult}
+              onReset={handleReset}
+              onViewEvidence={openEvidence}
+              onSelectTab={(tab) => setActiveTab(tab)}
+            />
 
             {/* Segmented Tab Navigation */}
             <div className="mt-10 mb-8 border-b border-mangaatha-border">
@@ -249,9 +285,21 @@ export default function Home() {
             {/* Tab Content */}
             <div className="min-h-[200px]" role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={activeTab}>
               {activeTab === "overview" && (
-                <div className="space-y-6 animate-fadeIn">
-                  <ApprovalList approvals={analysisResult.approvals} onViewEvidence={openEvidence} />
-                  <RelationshipExplorer relationships={analysisResult.relationships} walletAddress={analysisResult.address} />
+                <div className="space-y-10 animate-fadeIn">
+                  <div>
+                    <h3 className="text-xs font-mono uppercase tracking-widest text-mangaatha-text-muted mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-mangaatha-exposure rounded-full" />
+                      Detected Exposures & Risk Findings ({analysisResult.exposures.length})
+                    </h3>
+                    <ExposureList exposures={analysisResult.exposures} onViewEvidence={openEvidence} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-mono uppercase tracking-widest text-mangaatha-text-muted mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-mangaatha-mint rounded-full" />
+                      Active Token Approvals ({analysisResult.approvals.length})
+                    </h3>
+                    <ApprovalList approvals={analysisResult.approvals} onViewEvidence={openEvidence} />
+                  </div>
                 </div>
               )}
               {activeTab === "approvals" && (
@@ -262,9 +310,6 @@ export default function Home() {
               )}
               {activeTab === "evidence" && (
                 <EvidenceList evidence={analysisResult.evidence} onSelect={(evi) => setSelectedEvidence(evi)} />
-              )}
-              {activeTab === "relationships" && (
-                <RelationshipExplorer relationships={analysisResult.relationships} walletAddress={analysisResult.address} />
               )}
             </div>
           </div>
