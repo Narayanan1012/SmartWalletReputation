@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { isValidEvmAddress } from "@/lib/api";
+
+// ─────────────────────────────────────────────────────────
+// Address Input (PRD §P0 — Address Input)
+//
+// Accepts an EVM address, validates, and calls onAnalyze.
+// Supports Enter key and button click.
+// ─────────────────────────────────────────────────────────
 
 const SAMPLE_ADDRESSES = [
   { label: "vitalik.eth", address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" },
@@ -8,11 +16,14 @@ const SAMPLE_ADDRESSES = [
   { label: "Tether (USDT)", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7" },
 ];
 
-export default function AddressInput() {
+type Props = {
+  onAnalyze: (address: string) => void;
+  isLoading?: boolean;
+};
+
+export default function AddressInput({ onAnalyze, isLoading = false }: Props) {
   const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const isValidEvmAddress = (addr: string) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +40,7 @@ export default function AddressInput() {
     }
 
     setError(null);
-    // Placeholder feedback for testing
-    alert(`Analyzing address: ${trimmed}`);
+    onAnalyze(trimmed);
   };
 
   const handleSelectSample = (sampleAddr: string) => {
@@ -72,10 +82,11 @@ export default function AddressInput() {
             className="w-full py-4 sm:py-5 px-2 bg-transparent text-white placeholder-neutral-500 text-base sm:text-lg font-mono focus:outline-none"
             autoComplete="off"
             spellCheck="false"
+            disabled={isLoading}
           />
 
           {/* Clear Button */}
-          {address && (
+          {address && !isLoading && (
             <button
               type="button"
               onClick={() => {
@@ -105,22 +116,32 @@ export default function AddressInput() {
           <div className="pr-2 sm:pr-3">
             <button
               type="submit"
+              disabled={isLoading}
               className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm sm:text-base shadow-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <span>Analyze</span>
-              <svg
-                className="w-4 h-4 hidden sm:inline-block"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <span>Analyzing</span>
+                </>
+              ) : (
+                <>
+                  <span>Analyze</span>
+                  <svg
+                    className="w-4 h-4 hidden sm:inline-block"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -147,19 +168,21 @@ export default function AddressInput() {
       )}
 
       {/* Quick Try Sample Chips */}
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-neutral-400">
-        <span className="text-neutral-500">Try sample:</span>
-        {SAMPLE_ADDRESSES.map((sample) => (
-          <button
-            key={sample.label}
-            type="button"
-            onClick={() => handleSelectSample(sample.address)}
-            className="px-2.5 py-1 rounded-lg bg-neutral-800/80 hover:bg-neutral-700/80 text-neutral-300 border border-neutral-700/40 transition-colors cursor-pointer"
-          >
-            {sample.label}
-          </button>
-        ))}
-      </div>
+      {!isLoading && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-neutral-400">
+          <span className="text-neutral-500">Try sample:</span>
+          {SAMPLE_ADDRESSES.map((sample) => (
+            <button
+              key={sample.label}
+              type="button"
+              onClick={() => handleSelectSample(sample.address)}
+              className="px-2.5 py-1 rounded-lg bg-neutral-800/80 hover:bg-neutral-700/80 text-neutral-300 border border-neutral-700/40 transition-colors cursor-pointer"
+            >
+              {sample.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
