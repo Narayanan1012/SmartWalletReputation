@@ -6,6 +6,7 @@ import { analyzeAddress } from "@/lib/api";
 import AddressInput from "./components/AddressInput";
 import LoadingState from "./components/LoadingState";
 import ResultsOverview from "./components/ResultsOverview";
+import ApprovalList from "./components/ApprovalCard";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -153,7 +154,18 @@ export default function Home() {
 
         {/* ───── RESULTS: Dashboard ───── */}
         {appState === "results" && analysisResult && (
-          <ResultsOverview result={analysisResult} onReset={handleReset} />
+          <div className="w-full space-y-6">
+            <ResultsOverview result={analysisResult} onReset={handleReset} />
+
+            {/* Approvals Section */}
+            <ApprovalList
+              approvals={analysisResult.approvals}
+              onViewEvidence={(spenderAddress) => {
+                // Part 6 will wire this to open the EvidenceView
+                console.log("View evidence for spender:", spenderAddress);
+              }}
+            />
+          </div>
         )}
 
         {/* ───── ERROR: Analysis failed ───── */}
