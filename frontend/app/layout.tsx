@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import VideoBackground from "./components/VideoBackground";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space",
@@ -29,7 +30,10 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col relative text-mangaatha-text">
+        <VideoBackground />
+        {children}
+      </body>
     </html>
   );
 }
