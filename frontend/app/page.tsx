@@ -7,6 +7,7 @@ import AddressInput from "./components/AddressInput";
 import LoadingState from "./components/LoadingState";
 import ResultsOverview from "./components/ResultsOverview";
 import ApprovalList from "./components/ApprovalCard";
+import ExposureList from "./components/ExposureCard";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -163,6 +164,15 @@ export default function Home() {
               onViewEvidence={(spenderAddress) => {
                 // Part 6 will wire this to open the EvidenceView
                 console.log("View evidence for spender:", spenderAddress);
+              }}
+            />
+
+            {/* Exposures Section */}
+            <ExposureList
+              exposures={analysisResult.exposures}
+              onViewEvidence={(contractAddress) => {
+                // Part 6 will wire this to open the EvidenceView
+                console.log("View evidence for contract:", contractAddress);
               }}
             />
           </div>
