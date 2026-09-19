@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Evidence } from "@/types/analysis";
 import { truncateAddress } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────
-// Evidence View (PRD §P0 — Evidence View)
+// Evidence View (PRD §15 — Evidence View)
 //
-// The most important frontend feature.
-// Shows the causal chain:
-//   WALLET → APPROVAL → CONTRACT → SECURITY SIGNAL → EXPOSURE
-//
-// Rendered as a slide-over panel with connected vertical nodes.
+// Premium investigation timeline.
+// Numbered evidence steps, vertical tracking lines,
+// explicit technical typographic hierarchy.
+// No flashy animated backgrounds here to preserve readability.
 // ─────────────────────────────────────────────────────────
 
 type Props = {
@@ -19,52 +18,54 @@ type Props = {
   onClose: () => void;
 };
 
-type ChainNode = {
+type TimelineNode = {
   id: string;
+  step: string;
   label: string;
   detail: string | string[];
-  icon: "wallet" | "approval" | "contract" | "signal" | "exposure";
+  connectionText?: string;
   status: "safe" | "warning" | "danger" | "neutral";
 };
 
-function buildChainNodes(evidence: Evidence): ChainNode[] {
-  const nodes: ChainNode[] = [];
+function buildTimelineNodes(evidence: Evidence): TimelineNode[] {
+  const nodes: TimelineNode[] = [];
+  let stepCounter = 1;
 
   // 1. Wallet
   nodes.push({
     id: "wallet",
-    label: "Wallet",
-    detail: truncateAddress(evidence.wallet),
-    icon: "wallet",
+    step: String(stepCounter++).padStart(2, "0"),
+    label: "WALLET",
+    detail: evidence.wallet,
+    connectionText: "approved",
     status: "neutral",
   });
 
   // 2. Approval
   const approvalDetails: string[] = [];
-  if (evidence.token) approvalDetails.push(`Token: ${evidence.token}`);
   if (evidence.approval?.amount)
-    approvalDetails.push(`Amount: ${evidence.approval.amount}`);
+    approvalDetails.push(`Allowance: ${evidence.approval.amount}`);
   if (evidence.approval?.date)
     approvalDetails.push(`Date: ${evidence.approval.date}`);
   if (evidence.approval?.transaction)
-    approvalDetails.push(
-      `Tx: ${truncateAddress(evidence.approval.transaction, 10, 6)}`
-    );
+    approvalDetails.push(`Tx: ${evidence.approval.transaction}`);
 
   nodes.push({
     id: "approval",
-    label: evidence.token ? `Approved ${evidence.token}` : "Approval",
-    detail: approvalDetails.length > 0 ? approvalDetails : "Token approval granted",
-    icon: "approval",
+    step: String(stepCounter++).padStart(2, "0"),
+    label: evidence.token ? `${evidence.token} APPROVAL` : "TOKEN APPROVAL",
+    detail: approvalDetails.length > 0 ? approvalDetails : "Granted permission to external entity",
+    connectionText: "authorized spender",
     status: "neutral",
   });
 
   // 3. Contract / Spender
   nodes.push({
     id: "contract",
-    label: "Contract",
-    detail: truncateAddress(evidence.spender),
-    icon: "contract",
+    step: String(stepCounter++).padStart(2, "0"),
+    label: "CONTRACT",
+    detail: evidence.spender,
+    connectionText: evidence.contract?.signals?.length ? "security signal" : "relationship formed",
     status: "neutral",
   });
 
@@ -72,11 +73,11 @@ function buildChainNodes(evidence: Evidence): ChainNode[] {
   if (evidence.contract?.signals && evidence.contract.signals.length > 0) {
     nodes.push({
       id: "signal",
-      label: "Security Signals",
+      step: String(stepCounter++).padStart(2, "0"),
+      label: "SECURITY SIGNAL",
       detail: evidence.contract.signals,
-      icon: "signal",
-      status:
-        evidence.exposure?.status === "potential" ? "danger" : "warning",
+      connectionText: "resulted in",
+      status: evidence.exposure?.status === "potential" ? "danger" : "warning",
     });
   }
 
@@ -84,20 +85,15 @@ function buildChainNodes(evidence: Evidence): ChainNode[] {
   if (evidence.exposure) {
     nodes.push({
       id: "exposure",
+      step: String(stepCounter++).padStart(2, "0"),
       label:
-        evidence.exposure.status === "potential"
-          ? "Potential Exposure"
-          : evidence.exposure.status === "informational"
-            ? "Informational"
-            : "Exposure",
+        evidence.exposure.status === "potential" ? "POTENTIAL EXPOSURE" :
+        evidence.exposure.status === "informational" ? "INFORMATIONAL" :
+        "EXPOSURE",
       detail: evidence.exposure.reason,
-      icon: "exposure",
       status:
-        evidence.exposure.status === "potential"
-          ? "danger"
-          : evidence.exposure.status === "informational"
-            ? "safe"
-            : "warning",
+        evidence.exposure.status === "potential" ? "danger" :
+        evidence.exposure.status === "informational" ? "safe" : "warning",
     });
   }
 
@@ -106,224 +102,158 @@ function buildChainNodes(evidence: Evidence): ChainNode[] {
 
 const STATUS_COLORS = {
   safe: {
-    ring: "ring-emerald-500/30",
-    bg: "bg-emerald-500/15",
-    text: "text-emerald-400",
-    line: "from-emerald-500/40 to-emerald-500/10",
+    text: "text-mangaatha-safe",
+    border: "border-mangaatha-safe/30",
+    line: "bg-mangaatha-safe/30",
+    glow: "shadow-[0_0_15px_rgba(74,222,128,0.15)]",
   },
   warning: {
-    ring: "ring-amber-500/30",
-    bg: "bg-amber-500/15",
-    text: "text-amber-400",
-    line: "from-amber-500/40 to-amber-500/10",
+    text: "text-mangaatha-attention",
+    border: "border-mangaatha-attention/30",
+    line: "bg-mangaatha-attention/30",
+    glow: "shadow-[0_0_15px_rgba(251,191,36,0.15)]",
   },
   danger: {
-    ring: "ring-red-500/30",
-    bg: "bg-red-500/15",
-    text: "text-red-400",
-    line: "from-red-500/40 to-red-500/10",
+    text: "text-mangaatha-exposure",
+    border: "border-mangaatha-exposure/30",
+    line: "bg-mangaatha-exposure/30",
+    glow: "shadow-[0_0_15px_rgba(239,68,68,0.15)]",
   },
   neutral: {
-    ring: "ring-blue-500/30",
-    bg: "bg-blue-500/15",
-    text: "text-blue-400",
-    line: "from-blue-500/40 to-blue-500/10",
+    text: "text-mangaatha-text",
+    border: "border-mangaatha-border",
+    line: "bg-mangaatha-border",
+    glow: "",
   },
 };
 
-function NodeIcon({ icon, status }: { icon: ChainNode["icon"]; status: ChainNode["status"] }) {
-  const colors = STATUS_COLORS[status];
-
-  const iconPaths: Record<string, string> = {
-    wallet:
-      "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
-    approval: "M5 13l4 4L19 7",
-    contract:
-      "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-    signal:
-      "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z",
-    exposure:
-      "M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-  };
-
-  return (
-    <div
-      className={`w-10 h-10 rounded-full ${colors.bg} ring-2 ${colors.ring} flex items-center justify-center flex-shrink-0`}
-    >
-      <svg
-        className={`w-5 h-5 ${colors.text}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d={iconPaths[icon]}
-        />
-      </svg>
-    </div>
-  );
-}
-
 export default function EvidenceView({ evidence, onClose }: Props) {
-  const nodes = buildChainNodes(evidence);
-  const [expandedNode, setExpandedNode] = useState<string | null>(null);
+  const nodes = buildTimelineNodes(evidence);
+  
+  // Stagger entry animation
+  const [mountedNodes, setMountedNodes] = useState<number>(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMountedNodes(prev => {
+        if (prev >= nodes.length) {
+          clearInterval(timer);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 150); // 150ms stagger
+    return () => clearInterval(timer);
+  }, [nodes.length]);
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Darkened backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fadeIn"
+        className="fixed inset-0 bg-[#050608]/90 z-40 animate-fadeIn"
         onClick={onClose}
       />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 w-full sm:max-w-lg z-50 flex">
-        <div className="w-full bg-neutral-950 border-l border-neutral-800/60 shadow-2xl overflow-y-auto flex flex-col animate-slideIn">
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-sm border-b border-neutral-800/50 px-6 py-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                Evidence Chain
-              </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Why this finding was generated
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
-              aria-label="Close evidence view"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      <div className="fixed inset-0 z-50 pointer-events-none">
+        <div className="absolute inset-y-0 right-0 w-full sm:max-w-xl pointer-events-auto flex shadow-2xl">
+          <div className="w-full h-dvh bg-mangaatha-surface border-l border-mangaatha-border flex flex-col overflow-hidden animate-slideIn">
+            
+            {/* Header */}
+            <div className="flex-shrink-0 bg-mangaatha-surface border-b border-mangaatha-border px-6 py-6 flex items-center justify-between z-10">
+              <div>
+                <h2 className="text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase mb-1">
+                  Forensic Analysis
+                </h2>
+                <h1 className="text-lg font-bold text-mangaatha-text tracking-widest uppercase font-sans">
+                  EVIDENCE TRACE
+                </h1>
+              </div>
+              <button
+                onClick={onClose}
+                className="px-3 py-2 border border-mangaatha-border text-[10px] font-mono text-mangaatha-text-muted uppercase tracking-widest hover:text-mangaatha-text hover:border-mangaatha-text-muted transition-colors duration-200 focus-visible:outline-none focus-visible:border-mangaatha-mint"
+                aria-label="Close evidence trace"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+                CLOSE [ESC]
+              </button>
+            </div>
 
-          {/* Evidence chain */}
-          <div className="flex-1 px-6 py-8">
-            <div className="relative">
+            {/* Timeline Content - ONLY SCROLLABLE AREA */}
+            <div 
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 py-10 relative"
+              style={{ scrollbarGutter: "stable" }}
+            >
+              
+              {/* Master guide line background (very faint) */}
+              <div className="absolute left-[59px] top-10 bottom-10 w-px bg-mangaatha-border/30" />
+
               {nodes.map((node, idx) => {
-                const colors = STATUS_COLORS[node.status];
+                const isVisible = idx < mountedNodes;
                 const isLast = idx === nodes.length - 1;
-                const isExpanded = expandedNode === node.id;
-                const detailArray = Array.isArray(node.detail)
-                  ? node.detail
-                  : [node.detail];
+                const colors = STATUS_COLORS[node.status];
+                const details = Array.isArray(node.detail) ? node.detail : [node.detail];
 
                 return (
-                  <div key={node.id} className="relative">
-                    {/* Connecting line */}
-                    {!isLast && (
-                      <div
-                        className={`absolute left-5 top-10 w-0.5 bg-gradient-to-b ${colors.line}`}
-                        style={{ height: "calc(100% - 8px)" }}
-                      />
-                    )}
+                  <div 
+                    key={node.id} 
+                    className={`relative flex items-start transition-all duration-500 ease-out ${
+                      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                    }`}
+                  >
+                    
+                    {/* Step Number */}
+                    <div className={`w-8 pt-1 text-[10px] font-mono font-medium tracking-widest ${
+                      node.status === 'neutral' ? 'text-mangaatha-text-muted' : colors.text
+                    }`}>
+                      {node.step}
+                    </div>
 
-                    {/* Node */}
-                    <button
-                      onClick={() =>
-                        setExpandedNode(isExpanded ? null : node.id)
-                      }
-                      className={`relative flex items-start gap-4 w-full text-left p-3 -ml-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                        isExpanded
-                          ? "bg-neutral-900/80 ring-1 ring-neutral-700/50"
-                          : "hover:bg-neutral-900/40"
-                      }`}
-                    >
-                      <NodeIcon icon={node.icon} status={node.status} />
-
-                      <div className="flex-1 min-w-0 pt-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium text-sm">
-                            {node.label}
-                          </span>
-                          <svg
-                            className={`w-3.5 h-3.5 text-neutral-500 transition-transform duration-200 ${
-                              isExpanded ? "rotate-90" : ""
-                            }`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
+                    {/* Vertical Track Area */}
+                    <div className="relative w-8 flex flex-col items-center flex-shrink-0">
+                      {/* Node Dot */}
+                      <div className={`w-2 h-2 mt-1.5 rounded-full border ${colors.border} bg-mangaatha-surface z-10 ${colors.glow}`} />
+                      
+                      {/* Connection Line & Label */}
+                      {!isLast && (
+                        <div className="flex flex-col items-center mt-2 pb-6 min-h-[60px]">
+                          <div className={`w-px flex-1 ${STATUS_COLORS[nodes[idx+1].status].line}`} />
+                          <span className="text-mangaatha-text-muted text-[10px]">▼</span>
                         </div>
+                      )}
+                    </div>
 
-                        {/* Collapsed preview — first detail line */}
-                        {!isExpanded && (
-                          <p className="text-neutral-500 text-xs mt-0.5 truncate">
-                            {detailArray[0]}
-                          </p>
-                        )}
-
-                        {/* Expanded detail */}
-                        {isExpanded && (
-                          <div className="mt-2 space-y-1.5 animate-fadeIn">
-                            {detailArray.map((line, i) => (
-                              <div
-                                key={i}
-                                className={`flex items-start gap-2 text-xs ${
-                                  node.status === "danger"
-                                    ? "text-red-300/90"
-                                    : node.status === "warning"
-                                      ? "text-amber-300/90"
-                                      : "text-neutral-300"
-                                }`}
-                              >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${colors.bg}`}
-                                />
-                                <span className="leading-relaxed">{line}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                    {/* Content Box */}
+                    <div className={`flex-1 pb-10 ${isLast ? 'pb-4' : ''}`}>
+                      <h3 className={`text-sm font-semibold tracking-widest uppercase mb-2 ${colors.text}`}>
+                        {node.label}
+                      </h3>
+                      
+                      <div className={`p-4 border ${colors.border} bg-mangaatha-surface-alt/30`}>
+                        {details.map((detail, i) => {
+                          // Check if detail is an address by length/prefix
+                          const isAddress = detail.startsWith('0x') && detail.length > 20;
+                          return (
+                            <div key={i} className={`text-xs font-mono mb-1 last:mb-0 ${
+                              node.status === 'neutral' ? 'text-mangaatha-text-sec' : colors.text
+                            }`}>
+                              {isAddress ? detail : detail}
+                            </div>
+                          );
+                        })}
                       </div>
-                    </button>
-
-                    {/* Spacer between nodes */}
-                    {!isLast && <div className="h-4" />}
+                      
+                      {/* Connection Text (e.g. 'approved', 'authorized spender') */}
+                      {!isLast && node.connectionText && (
+                        <div className="mt-4 flex items-center gap-4 text-[10px] font-mono text-mangaatha-text-muted tracking-widest uppercase">
+                          <span>│</span>
+                          <span className="italic">{node.connectionText}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Flow direction indicator */}
-            <div className="mt-8 flex items-center justify-center gap-2 text-neutral-600 text-xs">
-              <div className="h-px w-12 bg-neutral-800" />
-              <span>Evidence flows top to bottom</span>
-              <div className="h-px w-12 bg-neutral-800" />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="sticky bottom-0 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800/50 px-6 py-4">
-            <button
-              onClick={onClose}
-              className="w-full px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm font-medium border border-neutral-700 transition-colors cursor-pointer"
-            >
-              Close
-            </button>
           </div>
         </div>
       </div>
