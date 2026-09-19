@@ -5,6 +5,7 @@ import type { AnalysisResult, AppState } from "@/types/analysis";
 import { analyzeAddress } from "@/lib/api";
 import AddressInput from "./components/AddressInput";
 import LoadingState from "./components/LoadingState";
+import ResultsOverview from "./components/ResultsOverview";
 
 // ─────────────────────────────────────────────────────────
 // Main page — State machine:
@@ -85,7 +86,7 @@ export default function Home() {
       </header>
 
       {/* ── Main Content Area (state-driven) ── */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-5xl mx-auto w-full">
+      <main className={`relative z-10 flex-1 flex flex-col items-center px-6 py-12 max-w-5xl mx-auto w-full ${appState === "results" ? "justify-start pt-8" : "justify-center"}`}>
         {/* ───── IDLE: Landing page ───── */}
         {appState === "idle" && (
           <div className="flex flex-col items-center text-center w-full animate-fadeIn">
@@ -150,34 +151,9 @@ export default function Home() {
           <LoadingState address={analyzedAddress} />
         )}
 
-        {/* ───── RESULTS: Placeholder for Parts 3–8 ───── */}
+        {/* ───── RESULTS: Dashboard ───── */}
         {appState === "results" && analysisResult && (
-          <div className="w-full animate-fadeIn">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium mb-4">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Analysis Complete
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Results Ready</h2>
-              <p className="text-neutral-400 text-sm font-mono mb-2">
-                {analysisResult.address.slice(0, 6)}...{analysisResult.address.slice(-4)}
-              </p>
-              <p className="text-neutral-500 text-sm">
-                {analysisResult.approvals.length} approvals · {analysisResult.exposures.length} exposures · {analysisResult.evidence.length} evidence items
-              </p>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={handleReset}
-                className="px-5 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm font-medium border border-neutral-700 transition-colors cursor-pointer"
-              >
-                ← New Analysis
-              </button>
-            </div>
-          </div>
+          <ResultsOverview result={analysisResult} onReset={handleReset} />
         )}
 
         {/* ───── ERROR: Analysis failed ───── */}
